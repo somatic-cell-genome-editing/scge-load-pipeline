@@ -1,0 +1,2 @@
+v. 1.0.0, Nov 30, 2020
+  -first pipeline version, load scge tables with metadata from files submitted

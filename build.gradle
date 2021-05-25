@@ -1,0 +1,72 @@
+// create a runnable jar with jar dependencies stored in lib subdirectory
+tasks.whenTaskAdded { task ->
+    ['startScripts', 'distTar'].each { String skipTaskName ->
+        if (task.name.contains(skipTaskName)) {
+            task.enabled = false
+        }
+    }
+}
+apply plugin: 'java'
+apply plugin: 'application'
+
+// JDK 8
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+mainClassName = 'edu.mcw.scge.Manager'
+String myAppName = 'scgeLoadPipeline'
+
+repositories {
+    mavenCentral()
+    maven {
+        url 'https://packages.atlassian.com/maven-3rdparty'
+    }
+}
+
+dependencies {
+    compile 'commons-dbcp:commons-dbcp:1.4'
+    compile 'log4j:log4j:1.2.17'
+    compile 'org.springframework:spring-beans:5.1.4.RELEASE'
+    compile 'org.springframework:spring-jdbc:5.1.4.RELEASE'
+    compile group: 'postgresql', name: 'postgresql', version: '9.1-901-1.jdbc4'
+    // https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml
+    compile group: 'org.apache.poi', name: 'poi-ooxml', version: '3.17'
+    // https://mvnrepository.com/artifact/commons-collections/commons-collections
+    compile group: 'commons-collections', name: 'commons-collections', version: '3.2.2'
+// https://mvnrepository.com/artifact/org.apache.poi/poi
+    compile group: 'org.apache.poi', name: 'poi', version: '3.17'
+// https://mvnrepository.com/artifact/org.apache.poi/poi-ooxml-schemas
+    compile group: 'org.apache.poi', name: 'poi-ooxml-schemas', version: '3.17'
+// https://mvnrepository.com/artifact/org.apache.xmlbeans/xmlbeans
+    compile group: 'org.apache.xmlbeans', name: 'xmlbeans', version: '2.6.0'
+
+
+    compile fileTree(dir: 'lib', include: '*.jar')
+}
+
+jar {
+    baseName = myAppName
+    manifest {
+        attributes(
+            'Built-By': System.getProperty('user.name'),
+            'Built-Date': new Date(),
+            'Built-JDK': System.getProperty('java.version'),
+            'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
+            'Main-Class': mainClassName
+        )
+    }
+}
+
+distributions {
+    main {
+        baseName = myAppName
+    }
+}
+
+task createDistro(type: Copy) {
+    def zipFile = file('build/distributions/'+myAppName+'.zip')
+    def outputDir = file("build/install")
+
+    from zipTree(zipFile)
+    into outputDir
+}
+createDistro.dependsOn assembleDist
