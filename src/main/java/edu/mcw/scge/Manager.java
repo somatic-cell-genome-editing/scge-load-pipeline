@@ -2,14 +2,21 @@ package edu.mcw.scge;
 
 
 
+import edu.mcw.scge.dao.implementation.DeliveryDao;
+import edu.mcw.scge.dao.implementation.EditorDao;
+import edu.mcw.scge.dao.implementation.ExperimentDao;
+import edu.mcw.scge.dao.implementation.ModelDao;
 import edu.mcw.scge.datamodel.*;
 import edu.mcw.scge.datamodel.Vector;
 import org.apache.log4j.Logger;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.io.FileSystemResource;
-import java.io.File;
-import java.io.FileInputStream;
+
+import java.io.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.*;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -25,14 +32,14 @@ public class Manager {
 
     LoadDAO dao = new LoadDAO();
 
-    int experimentId = 11;
+    long experimentId = Long.valueOf("18000000009");
     int studyId = 1015;
-    String fileName = "E:\\Data Submission.v3.2_Asokan Submission 1_final.xlsx";
+    String fileName = "E:\\Data Submission.v3.2_amg_SATC_BCM_Asokan_Arm1-validated - Final.xlsx";
     String expType="In Vivo";
-    int tier = 4;
+    int tier = 0;
 
-    List<Integer> vectors = new ArrayList<>();
-    List<Integer> guides = new ArrayList<>();
+    List<Long> vectors = new ArrayList<>();
+    List<Long> guides = new ArrayList<>();
 
     public static void main(String[] args) throws Exception {
 
@@ -60,16 +67,20 @@ public class Manager {
                     break;
             }
         }
-        int column = 3; //column in the excel sheet
-        String name = "Condition 1"; //exp record name to be loaded
-         manager.loadMetaData(column,name);
+        int column = 4; //column in the excel sheet
+        String name = "Arm 2"; //exp record name to be loaded
+        // manager.loadMetaData(column,name);
 
       /* for(int i = 11;i <= 14;i++) {
             manager.loadMetaData(i, "Condition "+(i-2));
         }
       */
 
-       manager.loadMean(manager.experimentId);
+      manager.loadMean(manager.experimentId);
+       // manager.loadOffTargetSites();
+
+        //manager.updateExperiment();
+
     }
 
     public void loadMetaData(int column, String name) throws Exception {
@@ -155,9 +166,11 @@ public class Manager {
                     } else if (cell1.getStringCellValue().equalsIgnoreCase("Chromosome")) {
                         guide.setChr(data);
                     } else if (cell1.getStringCellValue().equalsIgnoreCase("Chromosome Start")) {
-                        guide.setStart(data);
+                        if(data != null && !data.equals(""))
+                            guide.setStart(String.valueOf(new BigDecimal(data).intValue()));
                     } else if (cell1.getStringCellValue().equalsIgnoreCase("Chromosome End")) {
-                        guide.setStop(data);
+                        if(data != null && !data.equals(""))
+                            guide.setStop(String.valueOf(new BigDecimal(data).intValue()));
                     } else if (cell1.getStringCellValue().equalsIgnoreCase("Chromosome Strand")) {
                         if(data != null && !data.equals("")) {
                             if(data.equalsIgnoreCase("plus"))
@@ -170,7 +183,10 @@ public class Manager {
                         if(data != null)
                             guide.setSpacerSequence(data.toUpperCase());
                     } else if (cell1.getStringCellValue().equalsIgnoreCase("Spacer Length")) {
-                        guide.setSpacerLength(data);
+                        if(data != null && !data.equals("")) {
+                            Double val = Double.parseDouble(data);
+                            guide.setSpacerLength(String.valueOf(val.intValue()));
+                        }
                     } else if (cell1.getStringCellValue().equalsIgnoreCase("Guide Format")) {
                         guide.setGuideFormat(data);
                     } else if (cell1.getStringCellValue().equalsIgnoreCase("Off-target mutation detection method 1")) {
@@ -190,7 +206,10 @@ public class Manager {
                             offTargets.add(offTarget);
                         }
                     }else if (cell1.getStringCellValue().equalsIgnoreCase("Specificity Ratio")) {
-                        guide.setSpecificityRatio(Double.valueOf(data).toString());
+                   if(data != null && !data.equals("") ) {
+                       BigDecimal bd = new BigDecimal(data).setScale(3, RoundingMode.HALF_UP);
+                       guide.setSpecificityRatio(String.valueOf(bd.doubleValue()));
+                   }
                     }else if (cell1.getStringCellValue().equalsIgnoreCase("Standard guide scaffold sequence?")) {
                         guide.setStandardScaffoldSequence(data);
                     } else if (cell1.getStringCellValue().equalsIgnoreCase("IVT construct Source")) {
@@ -231,7 +250,7 @@ public class Manager {
                                 (guide.getPam() == null || guide.getPam().equals("")))
                             guide = new Guide();
                         else {
-                            int guideId = dao.getGuideId(guide);
+                            long guideId = dao.getGuideId(guide);
                             if (guideId == 0) {
                                 guide.setTier(tier);
                                 guideId = dao.insertGuide(guide);
@@ -291,7 +310,7 @@ public class Manager {
                             && (editor.getSymbol() == null || editor.getSymbol().equals("")))
                         editor = new Editor();
                     else {
-                        int editorId = dao.getEditorId(editor);
+                        long editorId = dao.getEditorId(editor);
                         if (editorId == 0) {
                             editor.setTier(tier);
                             editorId = dao.insertEditor(editor);
@@ -332,14 +351,13 @@ public class Manager {
                             vector = new Vector();
                         else {
                             vector.setType("Viral Vector");
-                            int vectorId = dao.getVectorId(vector);
+                            long vectorId = dao.getVectorId(vector);
                             if(vectorId == 0) {
                                 vector.setTier(tier);
                                 vectorId = dao.insertVector(vector);
                                 System.out.println("Inserted vector: " +vectorId);
                             }else System.out.println("Got vector: " +vectorId);
-                           // experiment.setVectorId(vectorId);
-                            vectors.add(20);
+                            //experiment.setVectorId(vectorId);
                         }
                         vvData = false;
                     }
@@ -362,7 +380,7 @@ public class Manager {
                             delivery = new Delivery();
                         else {
                             delivery.setType("Protein Conjugate");
-                            int deliveryId = dao.getDeliveryId(delivery);
+                            long deliveryId = dao.getDeliveryId(delivery);
                             if(deliveryId == 0) {
                                 delivery.setTier(tier);
                                 deliveryId = dao.insertDelivery(delivery);
@@ -387,7 +405,7 @@ public class Manager {
                             delivery = new Delivery();
                         else {
                             delivery.setType("Virus Like Particle");
-                            int deliveryId = dao.getDeliveryId(delivery);
+                            long deliveryId = dao.getDeliveryId(delivery);
                             if(deliveryId == 0) {
                                 delivery.setTier(tier);
                                 deliveryId = dao.insertDelivery(delivery);
@@ -419,7 +437,7 @@ public class Manager {
                             delivery = new Delivery();
                         else {
                             delivery.setType("Commercial Reagent");
-                            int deliveryId = dao.getDeliveryId(delivery);
+                            long deliveryId = dao.getDeliveryId(delivery);
                             if(deliveryId == 0) {
                                 delivery.setTier(tier);
                                 deliveryId = dao.insertDelivery(delivery);
@@ -446,7 +464,7 @@ public class Manager {
                             delivery = new Delivery();
                         else {
                             delivery.setType("Amphiphilic peptide");
-                            int deliveryId = dao.getDeliveryId(delivery);
+                            long deliveryId = dao.getDeliveryId(delivery);
                             if(deliveryId == 0) {
                                 delivery.setTier(tier);
                                 deliveryId = dao.insertDelivery(delivery);
@@ -478,7 +496,7 @@ public class Manager {
                             delivery = new Delivery();
                         else {
                             delivery.setType("Nanoparticle");
-                            int deliveryId = dao.getDeliveryId(delivery);
+                            long deliveryId = dao.getDeliveryId(delivery);
                             if(deliveryId == 0) {
                                 delivery.setTier(tier);
                                 deliveryId = dao.insertDelivery(delivery);
@@ -528,7 +546,7 @@ public class Manager {
                         model = new Model();
                     } else {
                         model.setType("cell");
-                        int modelId = dao.getModelId(model);
+                        long modelId = dao.getModelId(model);
                         if(model.getModelId() != 0)
                             modelId = model.getModelId();
                         if(modelId == 0) {
@@ -563,7 +581,7 @@ public class Manager {
                         model = new Model();
                     } else {
                         model.setType("Transient Reporter Assay");
-                        int modelId = dao.getModelId(model);
+                        long modelId = dao.getModelId(model);
                         if(modelId == 0) {
                             modelId = dao.insertModel(model);
                             System.out.println("Inserted model: " +modelId);
@@ -601,11 +619,12 @@ public class Manager {
                     model.setTransgeneDescription(data);
                 } else if (cell1.getStringCellValue().equalsIgnoreCase("Transgene Reporter")) {
                     model.setTransgeneReporter(data);
-                    if (model.getName() == null || model.getName().equals("")) {
+                    if ((model.getName() == null || model.getName().equals("")) &&
+                            (model.getParentalOrigin() == null || model.getParentalOrigin().equals(""))) {
                         model = new Model();
                     } else {
                         model.setType("animal");
-                        int modelId = dao.getModelId(model);
+                        long modelId = dao.getModelId(model);
                         if(modelId == 0) {
                             model.setTier(tier);
                             modelId = dao.insertModel(model);
@@ -668,16 +687,16 @@ public class Manager {
 
         }
         if(expType.contains("In Vitro")) {
-            int experimentRecId = dao.insertExperimentRecord(experiment);
+            long experimentRecId = dao.insertExperimentRecord(experiment);
             System.out.println(experimentRecId);
-            for(int guideId:guides) {
+            for(long guideId:guides) {
                 dao.insertGuideAssoc(experimentRecId, guideId);
                 for(OffTarget o:offTargets) {
                     o.setGuideId(guideId);
                     dao.insertOffTarget(o);
                 }
             }
-            for(int vectorId:vectors)
+            for(long vectorId:vectors)
                 dao.insertVectorAssoc(experimentRecId,vectorId);
 
 
@@ -717,7 +736,7 @@ Study s = new Study();
         }
         dao.insertStudy(s);
     }
-    public void loadData(int expRecId,int column) throws Exception{
+    public void loadData(long expRecId,int column) throws Exception{
         FileInputStream fis = new FileInputStream(new File(fileName));
 //creating workbook instance that refers to .xls file
         XSSFWorkbook wb = new XSSFWorkbook(fis);
@@ -765,7 +784,7 @@ Study s = new Study();
                     if(cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency"))
                         result.setResultType("Editing Efficiency");
                     else result.setResultType("Delivery Efficiency");
-                    int resultId = dao.insertExperimentResult(result);
+                    long resultId = dao.insertExperimentResult(result);
                     String valueString = data;
                     String[] values = valueString.split(",");
                     for(int i=0; i<values.length;i++){
@@ -773,7 +792,7 @@ Study s = new Study();
                         detail.setResultId(resultId);
                         detail.setReplicate(i+1);
                         detail.setResult(values[i].trim().toLowerCase());
-                        dao.insertExperimentResultDetail(detail);
+                        //dao.insertExperimentResultDetail(detail);
                     }
                 }
             }
@@ -828,7 +847,11 @@ Study s = new Study();
                 }
             }else if(cell1.getStringCellValue().equalsIgnoreCase("Units")) {
                 result.setUnits(data);
-            }else if(editingData || deliveryData ) {
+            }else if(cell1.getStringCellValue().equalsIgnoreCase("Edit Type")) {
+                result.setEditType(data);
+            }else if(cell1.getStringCellValue().equalsIgnoreCase("Measure is Normalized")) {
+                System.out.println("ignore");
+            }else if(editingData || deliveryData) {
 
                 if(editingData)
                     result.setResultType("Editing Efficiency");
@@ -840,15 +863,16 @@ Study s = new Study();
                     String cellType = cell2.getStringCellValue();
                     expRec.setTissueId(tissue);
                     expRec.setCellType(cellType);
-                    int expRecId = dao.insertExperimentRecord(expRec);
-                    for(int guideId:guides)
+                    expRec.setOrganSystemID(cell0.getStringCellValue());
+                    long expRecId = dao.insertExperimentRecord(expRec);
+                    for(long guideId:guides)
                         dao.insertGuideAssoc(expRecId, guideId);
 
-                    for(int vectorId:vectors)
+                    for(long vectorId:vectors)
                         dao.insertVectorAssoc(expRecId,vectorId);
 
                     result.setExperimentRecordId(expRecId);
-                    int resultId = dao.insertExperimentResult(result);
+                    long resultId = dao.insertExperimentResult(result);
                     String valueString = data;
                     String[] values = valueString.split(",");
                     for(int i=0; i<values.length;i++){
@@ -866,26 +890,186 @@ Study s = new Study();
         }
     }
 
-    public void loadMean(int expId) throws Exception{
+    public void loadMean(long expId) throws Exception{
         List<ExperimentRecord> records = dao.getExpRecords(expId);
         for (ExperimentRecord record : records) {
             ExperimentResultDetail resultDetail = new ExperimentResultDetail();
             List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
+            //BigDecimal average = new BigDecimal(0);
             double average = 0;
             int noOfSamples = 0;
             for (ExperimentResultDetail result : experimentResults) {
                 noOfSamples = result.getNumberOfSamples();
-                if(result.getResult() != null && !result.getResult().equals(""))
+                if(result.getResult() != null && !result.getResult().equals("")) {
                     average += Double.valueOf(result.getResult());
+                    //average = average.add(new BigDecimal(result.getResult()));
+                }
                 resultDetail = result;
             }
-            average = average / noOfSamples;
+            //average = average.divide(new BigDecimal(noOfSamples),2, RoundingMode.HALF_UP);
+            average = average/noOfSamples;
             average = Math.round(average * 100.0) / 100.0;
             resultDetail.setReplicate(0);
             resultDetail.setResult(String.valueOf(average));
             System.out.println(resultDetail.getResultId() + "," + resultDetail.getResult());
             dao.insertExperimentResultDetail(resultDetail);
 
+        }
+    }
+
+    public void loadOffTargetSites() throws Exception {
+        try
+        {
+            BufferedReader br = new BufferedReader(new FileReader("E:\\Tsai_Submission 1_ChangeSeq_Reads.csv"));
+            String line="";
+            boolean start = false;
+            HashMap<String,Integer> guideIds = new HashMap<>();
+
+            guideIds.put("PDCD1_site_1",164);
+            guideIds.put("PDCD1_site_2",165);
+            guideIds.put("PDCD1_site_3",166);
+            guideIds.put("PDCD1_site_4",167);
+            guideIds.put("PDCD1_site_5",168);
+            guideIds.put("PDCD1_site_6",169);
+            guideIds.put("PDCD1_site_7",170);
+            guideIds.put("PDCD1_site_8",171);
+            guideIds.put("PDCD1_site_9",172);
+            guideIds.put("PDCD1_site_10",173);
+            guideIds.put("PDCD1_site_11",174);
+            guideIds.put("PDCD1_site_12",175);
+            guideIds.put("PDCD1_site_13",176);
+            guideIds.put("PDCD1_site_14",177);
+            guideIds.put("PDCD1_site_15",178);
+            guideIds.put("PDCD1_site_16",179);
+
+
+            guideIds.put("PTPN2_site_1",180);
+            guideIds.put("PTPN2_site_2",181);
+            guideIds.put("PTPN2_site_3",182);
+
+            guideIds.put("PTPN6_site_1",183);
+            guideIds.put("PTPN6_site_2",184);
+            guideIds.put("PTPN6_site_3",185);
+            guideIds.put("PTPN6_site_4",186);
+            guideIds.put("PTPN6_site_5",187);
+            guideIds.put("PTPN6_site_6",188);
+            guideIds.put("PTPN6_site_7",189);
+            guideIds.put("PTPN6_site_8",190);
+            guideIds.put("PTPN6_site_9",191);
+
+
+            guideIds.put("TRAC_site_1",192);
+            guideIds.put("TRAC_site_2",193);
+            guideIds.put("TRAC_site_3",194);
+            guideIds.put("TRAC_site_4",195);
+            guideIds.put("TRAC_site_5",196);
+
+            guideIds.put("TRBC1_site_1",197);
+            guideIds.put("TRBC1_site_2",198);
+
+
+
+            while ((line = br.readLine()) != null)
+            {
+                String[] data = line.split(",");
+
+                if(start) {
+                    OffTargetSite o = new OffTargetSite();
+                    o.setOfftargetSequence(data[1]);
+                    o.setChromosome(data[2]);
+                    o.setStart(data[3]);
+                    o.setStop(data[4]);
+                    o.setStrand(data[5]);
+                    o.setMismatches(Integer.parseInt(data[6]));
+                    o.setTarget(data[7]);
+                    o.setSeqType("Change_seq");
+                    o.setNoOfReads(Integer.parseInt(data[8]));
+                    if (guideIds.containsKey(data[0])) {
+                        o.setGuideId(guideIds.get(data[0]));
+                        dao.insertOffTargetSite(o);
+                    }
+                }
+                start = true;
+            }
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateGuide() throws Exception{
+        List<Guide> guides = dao.getGuides();
+        for(Guide g: guides){
+            long newId = Long.valueOf("10000000000");
+            newId += g.getGuide_id();
+            dao.updateGuide(g.getGuide_id(),newId);
+            dao.updateGuideAssoc(g.getGuide_id(),newId);
+            System.out.println(newId);
+        }
+    }
+
+    public void updateVector() throws Exception{
+        List<Vector> vectors = dao.getVectors();
+        for(Vector v: vectors){
+            long newId = Long.valueOf("14000000000");
+            newId += v.getVectorId();
+            dao.updateVector(v.getVectorId(),newId);
+            dao.updateVectorAssoc(v.getVectorId(),newId);
+            System.out.println(newId);
+        }
+    }
+
+    public void updateEditor() throws Exception{
+        EditorDao edao = new EditorDao();
+        List<Editor> editors = edao.getAllEditors();
+        for(Editor e: editors){
+            long newId = Long.valueOf("11000000000");
+            newId += e.getId();
+            dao.updateEditor(e.getId(),newId);
+            System.out.println(newId);
+        }
+    }
+    public void updateModel() throws Exception{
+        ModelDao mdao = new ModelDao();
+        List<Model> models = mdao.getModels();
+        for(Model m: models){
+            long newId = Long.valueOf("13000000000");
+            newId += m.getModelId();
+            dao.updateModel(m.getModelId(),newId);
+            System.out.println(newId);
+        }
+    }
+    public void updateDelivery() throws Exception{
+        DeliveryDao ddao = new DeliveryDao();
+        List<Delivery> deliveries = ddao.getDeliverySystems();
+        for(Delivery d: deliveries){
+            long newId = Long.valueOf("12000000000");
+            newId += d.getId();
+            dao.updateDelivery(d.getId(),newId);
+            System.out.println(newId);
+        }
+    }
+
+    public void updateExperimentRecord() throws Exception{
+        ExperimentDao experimentDao = new ExperimentDao();
+        List<ExperimentRecord> experimentRecords = experimentDao.getAllExperimentRecords();
+        for(ExperimentRecord e: experimentRecords){
+           long newId = Long.valueOf("15000000000");
+            newId += e.getExperimentRecordId();
+            dao.updateExperimentRecord(e.getExperimentRecordId(),newId);
+            System.out.println(e.getExperimentRecordId());
+        }
+    }
+
+    public void updateExperiment() throws Exception{
+        ExperimentDao experimentDao = new ExperimentDao();
+        List<Experiment> experimentRecords = experimentDao.getAllExperiments();
+        for(Experiment e: experimentRecords){
+            long newId = Long.valueOf("18000000000");
+            newId += e.getExperimentId();
+            dao.updateExperiment(e.getExperimentId(),newId);
+            System.out.println(e.getExperimentId());
         }
     }
 }

@@ -3,6 +3,7 @@ package edu.mcw.scge;
 import edu.mcw.scge.dao.*;
 
 import edu.mcw.scge.dao.implementation.*;
+import edu.mcw.scge.dao.spring.GuideQuery;
 import edu.mcw.scge.datamodel.*;
 import org.springframework.jdbc.object.BatchSqlUpdate;
 
@@ -29,35 +30,35 @@ public class LoadDAO extends AbstractDAO {
     VectorDao vectorDao = new VectorDao();
     ExperimentResultDao resultDao = new ExperimentResultDao();
 
-    public int insertGuide(Guide guide) throws Exception{
+    public long insertGuide(Guide guide) throws Exception{
         return guideDao.insertGuide(guide);
     }
-    public int insertEditor(Editor editor) throws Exception{
+    public long insertEditor(Editor editor) throws Exception{
         return editorDao.insertEditor(editor);
     }
-    public int insertDelivery(Delivery delivery) throws Exception{
+    public long insertDelivery(Delivery delivery) throws Exception{
         return deliveryDao.insertDelivery(delivery);
     }
 
-    public int insertModel(Model model) throws Exception {
+    public long insertModel(Model model) throws Exception {
         return modelDao.insertModel(model);
     }
 
-    public int getModelId(Model model) throws Exception {
+    public long getModelId(Model model) throws Exception {
         return modelDao.getModelId(model);
     }
 
-    public int getGuideId(Guide guide) throws Exception {
+    public long getGuideId(Guide guide) throws Exception {
         return guideDao.getGuideId(guide);
     }
-    public int getEditorId(Editor editor) throws Exception {
+    public long getEditorId(Editor editor) throws Exception {
         return editorDao.getEditorId(editor);
     }
-    public int getDeliveryId(Delivery delivery) throws Exception {
+    public long getDeliveryId(Delivery delivery) throws Exception {
         return deliveryDao.getDeliveryId(delivery);
     }
 
-    public int insertExperimentRecord(ExperimentRecord experiment) throws Exception{
+    public long insertExperimentRecord(ExperimentRecord experiment) throws Exception{
         return expRecordDao.insertExperimentRecord(experiment);
     }
 
@@ -73,18 +74,18 @@ public class LoadDAO extends AbstractDAO {
         return methodDao.insertApplicationMethod(method);
     }
 
-    public int insertVector(Vector v) throws Exception{
+    public long insertVector(Vector v) throws Exception{
         return vectorDao.insertVector(v);
     }
 
-    public int getVectorId(Vector v) throws Exception {
+    public long getVectorId(Vector v) throws Exception {
         return vectorDao.getVectorId(v);
     }
     public int getMethodId(ApplicationMethod method) throws Exception {
         return methodDao.getAppMethodId(method);
     }
 
-    public int insertExperimentResult(ExperimentResultDetail e) throws Exception{
+    public long insertExperimentResult(ExperimentResultDetail e) throws Exception{
         return resultDao.insertExperimentResult(e);
     }
 
@@ -92,11 +93,11 @@ public class LoadDAO extends AbstractDAO {
         resultDao.insertExperimentResultDetail(e);
     }
 
-    public void insertGuideAssoc(int expRecId,int guideId) throws Exception {
+    public void insertGuideAssoc(long expRecId,long guideId) throws Exception {
         guideDao.insertGuideAssoc(expRecId,guideId);
     }
 
-    public void insertVectorAssoc(int expRecId,int vectorId) throws Exception {
+    public void insertVectorAssoc(long expRecId,long vectorId) throws Exception {
         vectorDao.insertVectorAssoc(expRecId,vectorId);
     }
 
@@ -105,18 +106,115 @@ public class LoadDAO extends AbstractDAO {
         dao.insertOffTarget(offTarget);
     }
 
-    public List<ExperimentRecord> getExpRecords( int experimentId) throws Exception {
+    public List<ExperimentRecord> getExpRecords( long experimentId) throws Exception {
         return expDao.getExperimentRecords(experimentId);
     }
 
-    public List<Guide> getGuides(int expRecId) throws Exception {
+    public List<Guide> getGuides(long expRecId) throws Exception {
         return guideDao.getGuidesByExpRecId(expRecId);
     }
-    public List<Vector> getVectors(int expRecId) throws Exception {
+    public List<Vector> getVectors(long expRecId) throws Exception {
         return vectorDao.getVectorsByExpRecId(expRecId);
     }
 
-    public List<ExperimentResultDetail> getExperimentalResults(int expRecId) throws Exception{
+    public List<ExperimentResultDetail> getExperimentalResults(long expRecId) throws Exception{
         return resultDao.getResultsByExperimentRecId(expRecId);
+    }
+
+    public List<Guide> getGuides() throws Exception{
+        return guideDao.getGuides();
+    }
+
+    public List<Vector> getVectors() throws Exception{
+        return  vectorDao.getAllVectors();
+    }
+
+    public void insertOffTargetSite(OffTargetSite o) throws Exception{
+        OffTargetSiteDao odao = new OffTargetSiteDao();
+        odao.insertOffTargetSite(o);
+    }
+    public void updateGuide(long oldId,long newId) throws Exception{
+        String sql = "update guide set guide_id = ? where guide_id = ?";
+
+        update(sql,newId,oldId);
+
+
+    }
+    public void updateGuideAssoc(long oldId,long newId) throws Exception{
+        String sql = "update guide_associations set guide_id = ? where guide_id = ?";
+
+        update(sql,newId,oldId);
+
+        sql = "update off_target set guide_id = ? where guide_id = ?";
+
+        update(sql,newId,oldId);
+    }
+    public void updateVector(long oldId,long newId) throws Exception{
+        String sql = "update vector set vector_id = ? where vector_id = ?";
+
+        update(sql,newId,oldId);
+    }
+    public void updateVectorAssoc(long oldId,long newId) throws Exception{
+        String sql = "update vector_associations set vector_id = ? where vector_id = ?";
+
+        update(sql,newId,oldId);
+    }
+    public void updateEditor(long oldId,long newId) throws Exception{
+        String sql = "update editor set editor_id = ? where editor_id = ?";
+
+        update(sql,newId,oldId);
+        sql = "update experiment_record set editor_id = ? where editor_id = ?";
+
+        update(sql,newId,oldId);
+    }
+    public void updateModel(long oldId,long newId) throws Exception{
+        String sql = "update model set model_id = ? where model_id = ?";
+
+        update(sql,newId,oldId);
+        sql = "update experiment_record set model_id = ? where model_id = ?";
+
+        update(sql,newId,oldId);
+    }
+    public void updateDelivery(long oldId,long newId) throws Exception{
+        String sql = "update delivery_system set ds_id = ? where ds_id = ?";
+
+        update(sql,newId,oldId);
+        sql = "update experiment_record set ds_id = ? where ds_id = ?";
+
+        update(sql,newId,oldId);
+    }
+
+    public void updateExperimentRecord(long oldId,long newId) throws Exception{
+        String sql = "update experiment_record set experiment_record_id = ? where experiment_record_id = ?";
+
+        update(sql,newId,oldId);
+        sql = "update experiment_result set experiment_record_id = ? where experiment_record_id = ?";
+
+        update(sql,newId,oldId);
+
+       /* String sql = "update guide_associations set experiment_record_id = ? where experiment_record_id = ?";
+
+        update(sql,newId,oldId);
+        sql = "update vector_associations set experiment_record_id = ? where experiment_record_id = ?";
+
+        update(sql,newId,oldId);
+        */
+    }
+
+    public void updateExperiment(long oldId,long newId) throws Exception{
+        String sql = "update experiment set experiment_id = ? where experiment_id = ?";
+
+        update(sql,newId,oldId);
+        sql = "update experiment_record set experiment_id = ? where experiment_id = ?";
+
+        update(sql,newId,oldId);
+
+       /* String sql = "update guide_associations set experiment_record_id = ? where experiment_record_id = ?";
+
+        update(sql,newId,oldId);
+        sql = "update vector_associations set experiment_record_id = ? where experiment_record_id = ?";
+
+        update(sql,newId,oldId);
+        */
     }
 }
