@@ -33,8 +33,14 @@ public class LoadDAO extends AbstractDAO {
     public long insertGuide(Guide guide) throws Exception{
         return guideDao.insertGuide(guide);
     }
+    public void insertGuideGenomeInfo(Guide guide) throws Exception{
+        guideDao.insertGenomeInfo(guide);
+    }
     public long insertEditor(Editor editor) throws Exception{
         return editorDao.insertEditor(editor);
+    }
+    public void insertEditorGenomeInfo(Editor editor) throws Exception{
+        editorDao.insertGenomeInfo(editor);
     }
     public long insertDelivery(Delivery delivery) throws Exception{
         return deliveryDao.insertDelivery(delivery);
@@ -51,6 +57,9 @@ public class LoadDAO extends AbstractDAO {
     public long getGuideId(Guide guide) throws Exception {
         return guideDao.getGuideId(guide);
     }
+    public List<Guide> getAllGuides() throws Exception {
+        return guideDao.getGuides();
+    }
     public long getEditorId(Editor editor) throws Exception {
         return editorDao.getEditorId(editor);
     }
@@ -61,7 +70,9 @@ public class LoadDAO extends AbstractDAO {
     public long insertExperimentRecord(ExperimentRecord experiment) throws Exception{
         return expRecordDao.insertExperimentRecord(experiment);
     }
-
+    public long getExpRecId(ExperimentRecord experiment) throws Exception {
+        return expRecordDao.getExpRecordId(experiment);
+    }
     public Person getPersonByEmail(String email) throws Exception{
      return personDao.getPersonByEmail(email).get(0);
     }
@@ -217,4 +228,5 @@ public class LoadDAO extends AbstractDAO {
         update(sql,newId,oldId);
         */
     }
+
 }
