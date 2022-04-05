@@ -2,6 +2,7 @@ package edu.mcw.scge;
 
 
 
+import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.dao.implementation.*;
 import edu.mcw.scge.datamodel.*;
 import edu.mcw.scge.datamodel.Vector;
@@ -30,10 +31,10 @@ public class Manager {
 
     LoadDAO dao = new LoadDAO();
 
-    long experimentId = Long.valueOf("18000000048");
-    int studyId = 1025;
-    String fileName = "E:\\Data Submission.v5.1-amg-Saltzman1-validated.v2--FINAL.xlsx";
-    String expType="In Vivo p20";
+    long experimentId = 18000000049L;
+    int studyId = 1059;
+    String fileName = "C:/tmp/Deverman.xlsx";
+    String expType="In Vivo";
     int tier = 0;
 
     Set<Long> vectors = new TreeSet<>();
@@ -65,20 +66,48 @@ public class Manager {
                     break;
             }
         }
-        int column = 8; //column in the excel sheet
-        String name = "Condition 1"; //exp record name to be loaded
-        manager.loadMetaData(column,name);
 
-    /* for(int i = 3;i <= 40;i++) {
-            manager.loadMetaData(i, "Condition "+(i-2));
-        } */
+        boolean loadData = false;
+        try {
 
+            if( loadData ) {
+                int column = 11; //column in the excel sheet
+                String name = "Arm 3: Negative Control Saline, Males"; //exp record name to be loaded
 
-    // manager.loadMean(manager.experimentId);
+                manager.loadMetaData(column, name);
+
+            } else {
+
+                manager.loadMean(manager.experimentId);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
       //  manager.loadOffTargetSites();
 
         //manager.updateExperiment();
 
+    }
+
+    String getCellData(Cell cell) {
+        String data;
+
+        if(cell == null)
+            data = null;
+        else if (cell.getCellType() == Cell.CELL_TYPE_STRING || cell.getCellType() == Cell.CELL_TYPE_BLANK)
+            data = cell.getStringCellValue();
+        else data = String.valueOf(cell.getNumericCellValue());
+
+        if( data!=null ) {
+            // replace nonbreakable space (&nbsp;) with regular space and then trim
+            String newData = data.replace("\u00A0", "").trim();
+            if( newData.length() != data.length() ) {
+                data = newData;
+            }
+        }
+        return data;
     }
 
     public void loadMetaData(int column, String name) throws Exception {
@@ -88,7 +117,7 @@ public class Manager {
 //creating workbook instance that refers to .xls file
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);      //creating a Sheet object to retrieve object
-        HashMap<String, Integer> rowMap = new HashMap<>();
+        //ashMap<String, Integer> rowMap = new HashMap<>();
         boolean guideData = false;
         boolean editorData = false;
         boolean meData = false;
@@ -120,16 +149,11 @@ public class Manager {
             Cell cell0 = row.getCell(0);
             Cell cell1 = row.getCell(1);
             Cell cell = row.getCell(column);
-            String data;
 
             if(row.getRowNum() < 3 || cell1 == null)
                 continue;
 
-            if(cell == null)
-                data = null;
-            else if (cell.getCellType() == Cell.CELL_TYPE_STRING || cell.getCellType() == Cell.CELL_TYPE_BLANK)
-                data = cell.getStringCellValue();
-            else data = String.valueOf(cell.getNumericCellValue());
+            String data = getCellData(cell);
 
             String modifiedData = WordUtils.capitalizeFully(data);
 
@@ -854,6 +878,10 @@ Study s = new Study();
                     cell1.getStringCellValue().equalsIgnoreCase("Biological Replicates")) {
 
                 if(data != null && !data.equals("")) {
+
+                    if( data.startsWith("n=") ) {
+                        data = data.substring(2).trim();
+                    }
                     result.setNumberOfSamples(Double.valueOf(data).intValue());
                 }
             }
@@ -898,16 +926,12 @@ Study s = new Study();
             Cell cell1 = row.getCell(1);
             Cell cell2 = row.getCell(2);
             Cell cell = row.getCell(column);
-            String data;
 
             if (row.getRowNum() < 3 || cell1 == null)
                 continue;
 
-            if (cell == null)
-                data = null;
-            else if (cell.getCellType() == Cell.CELL_TYPE_STRING || cell.getCellType() == Cell.CELL_TYPE_BLANK)
-                data = cell.getStringCellValue();
-            else data = String.valueOf(cell.getNumericCellValue());
+            String data = getCellData(cell);
+
 
             if( cell0!= null && cell0.getStringCellValue().equalsIgnoreCase("Editing Efficiency"))
                 editingData = true;
@@ -926,6 +950,10 @@ Study s = new Study();
                     cell1.getStringCellValue().equalsIgnoreCase("Biological Replicates")) {
 
                 if(data != null && !data.equals("")) {
+
+                    if( data.startsWith("n=") ) {
+                        data = data.substring(2).trim();
+                    }
                     result.setNumberOfSamples(Double.valueOf(data).intValue());
                 }
             }else if(cell1.getStringCellValue().equalsIgnoreCase("Units")) {

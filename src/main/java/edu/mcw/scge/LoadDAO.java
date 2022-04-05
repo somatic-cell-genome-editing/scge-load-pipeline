@@ -229,4 +229,13 @@ public class LoadDAO extends AbstractDAO {
         */
     }
 
+
+
+    public List<Study> getStudyById(int studyId) throws Exception {
+        return studyDao.getStudyById(studyId);
+    }
+
+    public Experiment getExperiment(long expId) throws Exception {
+        return expDao.getExperiment(expId);
+    }
 }
