@@ -29,6 +29,8 @@ public class LoadDAO extends AbstractDAO {
     ApplicationMethodDao methodDao = new ApplicationMethodDao();
     VectorDao vectorDao = new VectorDao();
     ExperimentResultDao resultDao = new ExperimentResultDao();
+    AntibodyDao antibodyDao = new AntibodyDao();
+    HRDonorDao hrDonorDao = new HRDonorDao();
 
     public long insertGuide(Guide guide) throws Exception{
         return guideDao.insertGuide(guide);
@@ -92,6 +94,13 @@ public class LoadDAO extends AbstractDAO {
     public long getVectorId(Vector v) throws Exception {
         return vectorDao.getVectorId(v);
     }
+    public int insertAntibody(Antibody a) throws Exception{
+        return antibodyDao.insertAntibody(a);
+    }
+
+    public int getAntibodyId(Antibody a) throws Exception {
+        return antibodyDao.getAntibodyId(a);
+    }
     public int getMethodId(ApplicationMethod method) throws Exception {
         return methodDao.getAppMethodId(method);
     }
@@ -111,7 +120,16 @@ public class LoadDAO extends AbstractDAO {
     public void insertVectorAssoc(long expRecId,long vectorId) throws Exception {
         vectorDao.insertVectorAssoc(expRecId,vectorId);
     }
+    public void insertAntibodyAssoc(long expRecId,int antibodyId) throws Exception {
+        antibodyDao.insertAntibodyAssoc(expRecId,antibodyId);
+    }
+    public long insertHrdonor(HRDonor a) throws Exception{
+        return hrDonorDao.insertHRDonor(a);
+    }
 
+    public long getHrdonorId(HRDonor a) throws Exception {
+        return hrDonorDao.getHRDonorId(a);
+    }
     public void insertOffTarget(OffTarget offTarget) throws Exception {
         OffTargetDao dao = new OffTargetDao();
         dao.insertOffTarget(offTarget);
