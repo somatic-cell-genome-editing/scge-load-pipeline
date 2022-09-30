@@ -1,6 +1,5 @@
 package edu.mcw.scge;
 
-import edu.mcw.scge.dao.implementation.*;
 import edu.mcw.scge.datamodel.*;
 import edu.mcw.scge.datamodel.Vector;
 import org.apache.commons.lang3.text.WordUtils;
@@ -25,9 +24,13 @@ public class Manager {
     Logger logSummary = Logger.getLogger("status");
     LoadDAO dao = new LoadDAO();
 
-    long experimentId = 18000000064L;
-    int studyId = 1059;
-    String fileName = "C:\\Users\\hsnalabolu\\Downloads\\Data Submission.Chaikof_SCGE copy_curated_MG--FINAL.xlsx";
+    // curiel.xlsx
+    //long experimentId = 18000000009L;
+    //int studyId = 1067;
+
+    long experimentId = 18000000057L;
+    int studyId = 1062;
+    String fileName = "/tmp/lam.xlsx";
     String expType = "In Vivo (2)";
     int tier = 0;
 
@@ -62,11 +65,12 @@ public class Manager {
             }
         }
 
-        boolean loadData = false;
+        manager.loadQualitativeMean(manager.experimentId);
+        boolean loadData = true;
         try {
             if (loadData) {
-                int column = 47; //column in the excel sheet
-                String name = "Condition 1"; //exp record name to be loaded
+                int column = 8; //column in the excel sheet
+                String name = "Condition 1"; //exp record name to be loaded, if not present
                 manager.loadMetaData(column, name);
             } else {
                 manager.loadMean(manager.experimentId);
@@ -104,7 +108,6 @@ public class Manager {
 //creating workbook instance that refers to .xls file
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);      //creating a Sheet object to retrieve object
-        //ashMap<String, Integer> rowMap = new HashMap<>();
         boolean guideData = false;
         boolean editorData = false;
         boolean meData = false;
@@ -153,6 +156,18 @@ public class Manager {
                 System.out.println(experiment.getExperimentName());
             }
             metadata.put(cell1.getStringCellValue(), data);
+
+            // note: animalData must be processed *before* guides, because 'guideData' flag is not cleared
+            //      and it can delete metadat for animalData section
+            if (animalData ||
+                    (cell0 != null && cell0.getStringCellValue().equalsIgnoreCase("Animal Model (AM)"))) {
+                animalData = true;
+                if (cell1.getStringCellValue().equalsIgnoreCase("Related publication description")) {
+                    experiment.setModelId(loadAnimalModel(metadata, model));
+                    animalData = false;
+                    metadata.clear();
+                }
+            }
 
             //Read and insert guide
             if (guideData ||
@@ -276,16 +291,6 @@ public class Manager {
                         } else System.out.println("Got model: " + modelId);
                     }
                     traData = false;
-                }
-            }
-
-            if (animalData ||
-                    (cell0 != null && cell0.getStringCellValue().equalsIgnoreCase("Animal Model (AM)"))) {
-                animalData = true;
-                if (cell1.getStringCellValue().equalsIgnoreCase("Related publication description")) {
-                    experiment.setModelId(loadAnimalModel(metadata, model));
-                    animalData = false;
-                    metadata.clear();
                 }
             }
 
@@ -484,6 +489,11 @@ public class Manager {
                     if (data.startsWith("n=") || data.startsWith("N=")) {
                         data = data.substring(2).trim();
                     }
+                    // remove any text after number
+                    int spacePos = data.indexOf(' ');
+                    if( spacePos>0 ) {
+                        data = data.substring(0, spacePos);
+                    }
                     result.setNumberOfSamples(Double.valueOf(data).intValue());
                 }
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Units")) {
@@ -666,6 +676,8 @@ public class Manager {
             guide.setStemloop1Sequence(getUpperCase(metadata.get("StemLoop 1 Sequence")));
             guide.setStemloop2Sequence(getUpperCase(metadata.get("StemLoop 2 Sequence")));
             guide.setStemloop3Sequence(getUpperCase(metadata.get("StemLoop 3 Sequence")));
+            guide.setGuideCompatibility(metadata.get("Guide Compatibility"));
+            guide.setFullGuide(metadata.get("Full Guide Sequence"));
   /* else if (cell1.getStringCellValue().equalsIgnoreCase("Off-target mutation detection method 1")) {
                         if(data != null && !data.equals(""))
                             offTarget.setDetectionMethod(data);
@@ -908,10 +920,15 @@ public class Manager {
         }
         model.setRrid(metadata.get("RRID link"));
         model.setParentalOrigin(metadata.get("Parental Origin"));
-        model.setName(metadata.get("Strain Symbol"));
+
+        String val = metadata.get("Strain Symbol"); // old field name
+        if( val==null ) val = metadata.get("Official strain symbol");
+        model.setName(val);
+
         model.setStrainAlias(metadata.get("Strain Aliases"));
         //(metadata.get("Strain Code"));
         model.setOrganism(metadata.get("Species"));
+        model.setSource(metadata.get("Source"));
         model.setDescription(metadata.get("Strain Description"));
         model.setTransgene(metadata.get("Integrated Transgene"));
         model.setAnnotatedMap(metadata.get("Annotated Map"));
@@ -1082,6 +1099,61 @@ public class Manager {
         }
         return null;
     }
+
+    public void loadQualitativeMean(long expId) throws Exception {
+
+        int insertedRows = 0;
+        List<ExperimentRecord> records = dao.getExpRecords(expId);
+        for (ExperimentRecord record : records) {
+            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
+
+            long resultId = 0;
+            String lastResult = null;
+            Map<String,Integer> freqMap = new HashMap<>();
+            ExperimentResultDetail result0 = null;
+
+            for (ExperimentResultDetail result : experimentResults) {
+                if( result.getReplicate()==0 ) {
+                    result0 = result;
+                } else {
+                    Integer freq = freqMap.get(result.getResult());
+                    if( freq==null ) {
+                        freq = 1;
+                    } else {
+                        freq++;
+                    }
+                    freqMap.put(result.getResult(), freq);
+
+                    resultId = result.getResultId();
+                    lastResult = result.getResult();
+                }
+            }
+
+            ExperimentResultDetail resultMean = new ExperimentResultDetail();
+            resultMean.setReplicate(0);
+            resultMean.setResultId(resultId);
+            if( freqMap.size()==1 ) {
+                resultMean.setResult(lastResult);
+            } else {
+                String multiResult = null;
+                for( Map.Entry<String,Integer> entry: freqMap.entrySet() ) {
+                    if( multiResult!=null ) {
+                        multiResult += " and " + entry.getValue() + " "+entry.getKey();
+                    } else {
+                        multiResult = entry.getValue() + " "+entry.getKey();
+                    }
+                }
+                resultMean.setResult(multiResult);
+            }
+            dao.insertExperimentResultDetail(resultMean);
+            insertedRows++;
+        }
+
+        System.out.println("inserted rows with replicate 0: "+insertedRows);
+
+        System.exit(0);
+    }
+
 }
 
 

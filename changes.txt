@@ -1,2 +1,5 @@
+2022-09-30
+  Guide: added loading of 'Guide Compatibility' and 'Full Guide Sequence'
+
 v. 1.0.0, Nov 30, 2020
   -first pipeline version, load scge tables with metadata from files submitted
