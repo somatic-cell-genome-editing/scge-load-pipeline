@@ -1,5 +1,6 @@
 package edu.mcw.scge;
 
+import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.datamodel.*;
 import edu.mcw.scge.datamodel.Vector;
 import org.apache.commons.lang3.text.WordUtils;
@@ -28,10 +29,15 @@ public class Manager {
     //long experimentId = 18000000009L;
     //int studyId = 1067;
 
-    long experimentId = 18000000057L;
-    int studyId = 1062;
-    String fileName = "/tmp/lam.xlsx";
-    String expType = "In Vivo (2)";
+    // lam
+    //long experimentId = 18000000057L;
+    //int studyId = 1062;
+    //String fileName = "/tmp/lam.xlsx";
+
+    int studyId = 1066;
+    long experimentId = 18000000060L;
+    String fileName = "/tmp/Bankiewicz2.xlsx";
+    String expType = "In Vivo";
     int tier = 0;
 
     Set<Long> vectors = new TreeSet<>();
@@ -65,19 +71,22 @@ public class Manager {
             }
         }
 
-        manager.loadQualitativeMean(manager.experimentId);
-        boolean loadData = true;
+
+        boolean loadData = false;
         try {
             if (loadData) {
-                int column = 8; //column in the excel sheet
+                int column = 6; // 0-based column in the excel sheet
                 String name = "Condition 1"; //exp record name to be loaded, if not present
                 manager.loadMetaData(column, name);
             } else {
+                //manager.loadQualitativeMean(manager.experimentId);
                 manager.loadMean(manager.experimentId);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+
         //  manager.loadOffTargetSites();
         //manager.updateExperiment();
     }
@@ -103,14 +112,12 @@ public class Manager {
 
     public void loadMetaData(int column, String name) throws Exception {
 
-//obtaining input bytes from a file
         FileInputStream fis = new FileInputStream(new File(fileName));
-//creating workbook instance that refers to .xls file
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);      //creating a Sheet object to retrieve object
         boolean guideData = false;
         boolean editorData = false;
-        boolean meData = false;
+        //boolean meData = false;
         boolean npData = false;
         boolean apData = false;
         boolean vvData = false;
@@ -215,7 +222,11 @@ public class Manager {
                 pgData = true;
                 vvData = false;
                 if (cell1.getStringCellValue().equalsIgnoreCase("Related publication description")) {
-                    experiment.setDeliverySystemId(loadProtienConjugate(metadata, delivery));
+                    long dsId = loadProtienConjugate(metadata, delivery);
+                    if( dsId!=0 ) {
+                        System.out.println("Delivery System (Protein Conjugate) = "+dsId);
+                        experiment.setDeliverySystemId(dsId);
+                    }
                     pgData = false;
                     metadata.clear();
                 }
@@ -223,7 +234,11 @@ public class Manager {
                     (cell0 != null && cell0.getStringCellValue().equalsIgnoreCase("Virus Like Particle")))) {
                 vlpData = true;
                 if (cell1.getStringCellValue().equalsIgnoreCase("Related publication description")) {
-                    experiment.setDeliverySystemId(loadVirusParticle(metadata, delivery));
+                    long dsId = loadVirusParticle(metadata, delivery);
+                    if( dsId!=0 ) {
+                        System.out.println("Delivery System (Virus Like Particle) = "+dsId);
+                        experiment.setDeliverySystemId(dsId);
+                    }
                     vlpData = false;
                     metadata.clear();
                 }
@@ -231,7 +246,11 @@ public class Manager {
                     (cell0 != null && cell0.getStringCellValue().equalsIgnoreCase("Commercial Reagent")))) {
                 crData = true;
                 if (cell1.getStringCellValue().equalsIgnoreCase("Related publication description")) {
-                    experiment.setDeliverySystemId(loadCommercialReagent(metadata, delivery));
+                    long dsId = loadCommercialReagent(metadata, delivery);
+                    if( dsId!=0 ) {
+                        System.out.println("Delivery System (Commercial Reagent) = "+dsId);
+                        experiment.setDeliverySystemId(dsId);
+                    }
                     crData = false;
                     metadata.clear();
                 }
@@ -239,7 +258,11 @@ public class Manager {
                     (cell0 != null && cell0.getStringCellValue().equalsIgnoreCase("Amphiphilic peptide")))) {
                 apData = true;
                 if (cell1.getStringCellValue().equalsIgnoreCase("Related publication description")) {
-                    experiment.setDeliverySystemId(loadAmphiphilicPeptide(metadata, delivery));
+                    long dsId = loadAmphiphilicPeptide(metadata, delivery);
+                    if( dsId!=0 ) {
+                        System.out.println("Delivery System (Amphiphilic peptide) = "+dsId);
+                        experiment.setDeliverySystemId(dsId);
+                    }
                     apData = false;
                     metadata.clear();
                 }
@@ -247,7 +270,11 @@ public class Manager {
                     (cell0 != null && cell0.getStringCellValue().equalsIgnoreCase("Nanoparticle")))) {
                 npData = true;
                 if (cell1.getStringCellValue().equalsIgnoreCase("Related publication description")) {
-                    experiment.setDeliverySystemId(loadNanoparticle(metadata, delivery));
+                    long dsId = loadNanoparticle(metadata, delivery);
+                    if( dsId!=0 ) {
+                        System.out.println("Delivery System (Nanoparticle) = "+dsId);
+                        experiment.setDeliverySystemId(dsId);
+                    }
                     npData = false;
                     metadata.clear();
                 }
@@ -863,8 +890,9 @@ public class Manager {
     }
 
     private long loadAmphiphilicPeptide(HashMap<String, String> metadata, Delivery delivery) throws Exception {
-        if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
-            delivery.setId(new BigDecimal(metadata.get("SCGE ID")).longValue());
+        String scgeId = metadata.get("SCGE ID");
+        if( !Utils.isStringEmpty(scgeId) ) {
+            delivery.setId(new BigDecimal(scgeId).longValue());
         }
         delivery.setSource(metadata.get("Source"));
         delivery.setLabId(metadata.get("Lab Name/ID"));
@@ -872,19 +900,18 @@ public class Manager {
         delivery.setDescription(metadata.get("AP Description"));
         delivery.setSequence(metadata.get("AP Sequence"));
         metadata.clear();
-        if (delivery.getId() == 0 && (delivery.getLabId() == null || delivery.getLabId().equals("")))
-            return 0;
-        else {
-            if (delivery.getId() == 0) {
-                long deliveryId = dao.getDeliveryId(delivery);
-                if (deliveryId == 0) {
-                    delivery.setTier(tier);
-                    deliveryId = dao.insertDelivery(delivery);
-                }
-                return deliveryId;
-            }
+        if( delivery.getId()!=0 ) {
+            return delivery.getId();
+        }
+        if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
         }
+        long deliveryId = dao.getDeliveryId(delivery);
+        if (deliveryId == 0) {
+            delivery.setTier(tier);
+            deliveryId = dao.insertDelivery(delivery);
+        }
+        return deliveryId;
     }
 
     private long loadNanoparticle(HashMap<String, String> metadata, Delivery delivery) throws Exception {
@@ -1108,43 +1135,25 @@ public class Manager {
             List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
 
             long resultId = 0;
-            String lastResult = null;
-            Map<String,Integer> freqMap = new HashMap<>();
-            ExperimentResultDetail result0 = null;
+            int anyCount = 0;
+            int presentCount = 0;
 
             for (ExperimentResultDetail result : experimentResults) {
-                if( result.getReplicate()==0 ) {
-                    result0 = result;
-                } else {
-                    Integer freq = freqMap.get(result.getResult());
-                    if( freq==null ) {
-                        freq = 1;
-                    } else {
-                        freq++;
+                if( result.getReplicate()!=0 ) {
+                    if( result.getResult().equals("present") ) {
+                        presentCount++;
                     }
-                    freqMap.put(result.getResult(), freq);
+                    anyCount++;
 
                     resultId = result.getResultId();
-                    lastResult = result.getResult();
                 }
             }
 
             ExperimentResultDetail resultMean = new ExperimentResultDetail();
             resultMean.setReplicate(0);
             resultMean.setResultId(resultId);
-            if( freqMap.size()==1 ) {
-                resultMean.setResult(lastResult);
-            } else {
-                String multiResult = null;
-                for( Map.Entry<String,Integer> entry: freqMap.entrySet() ) {
-                    if( multiResult!=null ) {
-                        multiResult += " and " + entry.getValue() + " "+entry.getKey();
-                    } else {
-                        multiResult = entry.getValue() + " "+entry.getKey();
-                    }
-                }
-                resultMean.setResult(multiResult);
-            }
+            resultMean.setResult(presentCount+" of "+anyCount+" present");
+
             dao.insertExperimentResultDetail(resultMean);
             insertedRows++;
         }

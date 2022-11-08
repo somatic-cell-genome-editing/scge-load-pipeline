@@ -1,5 +1,10 @@
-2022-09-30
+Nov 8, 2022
+  Delivery Systems: fixed code to avoid overwriting some values, fixed loading of Amphiphilic peptides
+  loaded Bankiewicz data: study_id=1066 exp_id=18000000060
+
+Sep 30, 2022
   Guide: added loading of 'Guide Compatibility' and 'Full Guide Sequence'
+  updated a way to calculate 'qualitative data' ('1 of 4 present' instead of '3 absent and 1 present')
 
 v. 1.0.0, Nov 30, 2020
   -first pipeline version, load scge tables with metadata from files submitted
