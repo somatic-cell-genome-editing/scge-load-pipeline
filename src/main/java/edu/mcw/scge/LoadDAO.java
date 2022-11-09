@@ -42,7 +42,9 @@ public class LoadDAO extends AbstractDAO {
         editorDao.insertGenomeInfo(editor);
     }
     public long insertDelivery(Delivery delivery) throws Exception{
-        return deliveryDao.insertDelivery(delivery);
+        long id = deliveryDao.insertDelivery(delivery);
+        delivery.setId(id);
+        return id;
     }
 
     public long insertModel(Model model) throws Exception {

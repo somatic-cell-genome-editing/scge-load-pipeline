@@ -18,7 +18,7 @@ public class Bankiewicz {
         try {
             for( int column=3; column<=6; column++ ) { // 0-based column in the excel sheet
                 String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name);
+                manager.loadMetaData(column, name, false);
             }
             manager.loadMean(manager.experimentId);
         } catch (Exception e) {

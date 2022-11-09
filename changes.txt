@@ -1,3 +1,6 @@
+Nov 9, 2022
+  fixes in parsing; improved loading of qualitative data
+
 Nov 8, 2022
   Delivery Systems: fixed code to avoid overwriting some values, fixed loading of Amphiphilic peptides
   loaded Bankiewicz data: study_id=1066 exp_id=18000000060

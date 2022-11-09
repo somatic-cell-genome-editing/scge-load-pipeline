@@ -71,13 +71,14 @@ public class Manager {
             }
         }
 
+    System.exit(0);
 
         boolean loadData = false;
         try {
             if (loadData) {
                 int column = 6; // 0-based column in the excel sheet
                 String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name);
+                manager.loadMetaData(column, name, false);
             } else {
                 //manager.loadQualitativeMean(manager.experimentId);
                 manager.loadMean(manager.experimentId);
@@ -117,7 +118,7 @@ public class Manager {
         return data;
     }
 
-    public void loadMetaData(int column, String name) throws Exception {
+    public void loadMetaData(int column, String name, boolean qualitativeData) throws Exception {
 
         FileInputStream fis = new FileInputStream(new File(fileName));
         XSSFWorkbook wb = new XSSFWorkbook(fis);
@@ -191,6 +192,7 @@ public class Manager {
                 if (cell1.getStringCellValue().equalsIgnoreCase("Related publication description")) {
                     loadGuide(metadata, guide);
                     metadata.clear();
+                    guideData = false;
                 }
             }
 
@@ -202,6 +204,7 @@ public class Manager {
                 if (cell1.getStringCellValue().equalsIgnoreCase("Related publication description")) {
                     experiment.setEditorId(loadEditor(metadata, editor));
                     metadata.clear();
+                    editorData = false;
                 }
             }
             if (hrdonorData ||
@@ -380,10 +383,12 @@ public class Manager {
             for (int antibodyId : antibodies)
                 dao.insertAntibodyAssoc(experimentRecId,antibodyId);
 
-            loadData(experimentRecId, column);
+            loadData(experimentRecId, column, qualitativeData);
             vectors.clear();
             guides.clear();
-        } else loadData(experiment, column);
+        } else {
+            loadData(experiment, column, qualitativeData);
+        }
     }
 
     public void loadStudy() throws Exception {
@@ -416,8 +421,8 @@ public class Manager {
         dao.insertStudy(s);
     }
 
-    public void loadData(long expRecId, int column) throws Exception {
-        FileInputStream fis = new FileInputStream(new File(fileName));
+    public void loadData(long expRecId, int column, boolean qualitativeData) throws Exception {
+        FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);
         ExperimentResultDetail result = new ExperimentResultDetail();
@@ -454,7 +459,11 @@ public class Manager {
                 }
             }
             if (cell1.getStringCellValue().equalsIgnoreCase("Units")) {
-                result.setUnits(data);
+                if( qualitativeData ) {
+                    result.setUnits("Signal");
+                } else {
+                    result.setUnits(data);
+                }
             }
             if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency") ||
                     cell1.getStringCellValue().equalsIgnoreCase("Delivery Efficiency")) {
@@ -479,7 +488,7 @@ public class Manager {
         }
     }
 
-    public void loadData(ExperimentRecord expRec, int column) throws Exception {
+    public void loadData(ExperimentRecord expRec, int column, boolean qualitativeData) throws Exception {
         FileInputStream fis = new FileInputStream(new File(fileName));
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);
@@ -531,7 +540,11 @@ public class Manager {
                     result.setNumberOfSamples(Double.valueOf(data).intValue());
                 }
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Units")) {
-                result.setUnits(data);
+                if( qualitativeData ) {
+                    result.setUnits("Signal");
+                } else {
+                    result.setUnits(data);
+                }
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Edit Type")) {
                 result.setEditType(data);
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Measure is Normalized")) {
@@ -831,7 +844,6 @@ public class Manager {
         delivery.setLabId(metadata.get("Lab Name/ID"));
         delivery.setDescription(metadata.get("PCJ Description"));
         delivery.setType("Protein Conjugate");
-        metadata.clear();
         if (delivery.getId() == 0 && (delivery.getLabId() == null || delivery.getLabId().equals("")))
             return 0;
         else {
@@ -856,7 +868,6 @@ public class Manager {
         delivery.setName(metadata.get("Lab Name/ID"));
         delivery.setDescription(metadata.get("VLP Description"));
         delivery.setType("Virus Like Particle");
-        metadata.clear();
         if (delivery.getId() == 0 && (delivery.getLabId() == null || delivery.getLabId().equals("")))
             return 0;
         else {
@@ -880,7 +891,6 @@ public class Manager {
         delivery.setLabId(metadata.get("Lab Name/ID"));
         delivery.setName(metadata.get("Reagent Name"));
         delivery.setDescription(metadata.get("Reagent Description"));
-        metadata.clear();
         if (delivery.getId() == 0 && (delivery.getLabId() == null || delivery.getLabId().equals("")))
             return 0;
         else {
@@ -906,7 +916,6 @@ public class Manager {
         delivery.setName(metadata.get("Lab Name/ID"));
         delivery.setDescription(metadata.get("AP Description"));
         delivery.setSequence(metadata.get("AP Sequence"));
-        metadata.clear();
         if( delivery.getId()!=0 ) {
             return delivery.getId();
         }
@@ -932,17 +941,16 @@ public class Manager {
         delivery.setDescription(metadata.get("NP Description"));
         delivery.setSubtype(metadata.get("NP Type"));
         delivery.setType("Nanoparticle");
-        metadata.clear();
         if (delivery.getLabId() == null || delivery.getLabId().equals(""))
             return 0;
         else {
-                long deliveryId = dao.getDeliveryId(delivery);
-                if (deliveryId == 0) {
-                    delivery.setTier(tier);
-                    deliveryId = dao.insertDelivery(delivery);
-                    System.out.println("Inserted Nanoparticle: " + deliveryId);
-                } else System.out.println("Got Nanoparticle: " + deliveryId);
-                return deliveryId;
+            long deliveryId = dao.getDeliveryId(delivery);
+            if (deliveryId == 0) {
+                delivery.setTier(tier);
+                deliveryId = dao.insertDelivery(delivery);
+                System.out.println("Inserted Nanoparticle: " + deliveryId);
+            } else System.out.println("Got Nanoparticle: " + deliveryId);
+            return deliveryId;
         }
     }
 
@@ -1144,11 +1152,15 @@ public class Manager {
             long resultId = 0;
             int anyCount = 0;
             int presentCount = 0;
+            int notReportedCount = 0;
 
             for (ExperimentResultDetail result : experimentResults) {
                 if( result.getReplicate()!=0 ) {
                     if( result.getResult().equals("present") ) {
                         presentCount++;
+                    }
+                    if( result.getResult().equals("not reported") ) {
+                        notReportedCount++;
                     }
                     anyCount++;
 
@@ -1159,7 +1171,11 @@ public class Manager {
             ExperimentResultDetail resultMean = new ExperimentResultDetail();
             resultMean.setReplicate(0);
             resultMean.setResultId(resultId);
-            resultMean.setResult(presentCount+" of "+anyCount+" present");
+            if( notReportedCount==anyCount ) {
+                resultMean.setResult("not reported");
+            } else {
+                resultMean.setResult(presentCount + " of " + anyCount + " present");
+            }
 
             dao.insertExperimentResultDetail(resultMean);
             insertedRows++;
