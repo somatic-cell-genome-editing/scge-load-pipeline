@@ -1,6 +1,7 @@
 Nov 8, 2022
   Delivery Systems: fixed code to avoid overwriting some values, fixed loading of Amphiphilic peptides
   loaded Bankiewicz data: study_id=1066 exp_id=18000000060
+  loaded Lam data
 
 Sep 30, 2022
   Guide: added loading of 'Guide Compatibility' and 'Full Guide Sequence'

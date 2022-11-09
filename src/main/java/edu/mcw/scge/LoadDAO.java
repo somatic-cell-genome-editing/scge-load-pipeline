@@ -3,11 +3,8 @@ package edu.mcw.scge;
 import edu.mcw.scge.dao.*;
 
 import edu.mcw.scge.dao.implementation.*;
-import edu.mcw.scge.dao.spring.GuideQuery;
 import edu.mcw.scge.datamodel.*;
-import org.springframework.jdbc.object.BatchSqlUpdate;
 
-import java.sql.Connection;
 import java.util.List;
 
 

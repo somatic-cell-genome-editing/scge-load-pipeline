@@ -34,11 +34,11 @@ public class Manager {
     //int studyId = 1062;
     //String fileName = "/tmp/lam.xlsx";
 
-    int studyId = 1066;
-    long experimentId = 18000000060L;
-    String fileName = "/tmp/Bankiewicz2.xlsx";
-    String expType = "In Vivo";
-    int tier = 0;
+    public int studyId = 1066;
+    public long experimentId = 18000000060L;
+    public String fileName = "/test/Bankiewicz2.xlsx";
+    public String expType = "In Vivo";
+    public int tier = 0;
 
     Set<Long> vectors = new TreeSet<>();
     Set<Long> guides = new TreeSet<>();
@@ -89,6 +89,13 @@ public class Manager {
 
         //  manager.loadOffTargetSites();
         //manager.updateExperiment();
+    }
+
+    public static Manager getManagerInstance() {
+        DefaultListableBeanFactory bf = new DefaultListableBeanFactory();
+        new XmlBeanDefinitionReader(bf).loadBeanDefinitions(new FileSystemResource("properties/AppConfigure.xml"));
+        Manager manager = (Manager) (bf.getBean("manager"));
+        return manager;
     }
 
     private String getCellData(Cell cell) {
