@@ -3,15 +3,15 @@ package edu.mcw.scge.load;
 import edu.mcw.scge.Manager;
 
 // study loaded in Nov 08, 2022
-public class Bankiewicz {
+public class Curiel {
 
     public static void main(String[] args) {
 
         Manager manager = Manager.getManagerInstance();
 
-        manager.studyId = 1066;
-        manager.experimentId = 18000000060L;
-        manager.fileName = "data/Bankiewicz4.xlsx";
+        manager.studyId = 1067;
+        manager.experimentId = 18000000009L;
+        manager.fileName = "data/Curiel.xlsx";
         manager.expType = "In Vivo";
         manager.tier = 0;
 
