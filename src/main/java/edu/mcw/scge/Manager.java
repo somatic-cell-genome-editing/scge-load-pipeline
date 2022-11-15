@@ -37,6 +37,7 @@ public class Manager {
         DS_COMMERCIAL_REAGENT,
         DS_AMPHIPHILIC_PEPTIDE,
         MODEL,
+        EXPERIMENT_DETAILS,
     }
     public int studyId = 1066;
     public long experimentId = 18000000060L;
@@ -290,6 +291,11 @@ public class Manager {
                     cellData = false;
                     metadata.clear();
                 }
+            }
+
+            // EXPERIMENT
+            if( cell0Data.equalsIgnoreCase("Experiment Details") ) {
+                section = SECTION.EXPERIMENT_DETAILS;
             }
 
             if (traData ||

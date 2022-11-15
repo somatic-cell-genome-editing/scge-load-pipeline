@@ -11,7 +11,7 @@ public class Lam {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1062;
-        manager.fileName = "data/Lam3.xlsx";
+        manager.fileName = "data/Lam4.xlsx";
         manager.tier = 0;
 
         try {
