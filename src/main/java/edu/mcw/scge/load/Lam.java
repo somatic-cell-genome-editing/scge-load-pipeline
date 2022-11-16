@@ -2,8 +2,7 @@ package edu.mcw.scge.load;
 
 import edu.mcw.scge.Manager;
 
-// study reloaded in Nov 08, 2022 - Lam2.xlsx
-// study reloaded in Nov 09, 2022 - Lam3.xlsx
+// loaded in Nov 2022
 public class Lam {
 
     public static void main(String[] args) {
@@ -17,8 +16,8 @@ public class Lam {
         try {
             String name = "Condition 1"; //exp record name to be loaded, if not present
 
-            boolean loadInVivo1 = false;
-            boolean loadInVivo2 = true;
+            boolean loadInVivo1 = true;
+            boolean loadInVivo2 = false;
             boolean qualitativeData; // if true, it overrides units for experiment data to 'Signal'
 
             // load "In Vivo" sheet
