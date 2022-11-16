@@ -75,26 +75,6 @@ public class Manager {
                     break;
             }
         }
-
-    System.exit(0);
-
-        boolean loadData = false;
-        try {
-            if (loadData) {
-                int column = 6; // 0-based column in the excel sheet
-                String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name, false);
-            } else {
-                //manager.loadQualitativeMean(manager.experimentId);
-                manager.loadMean(manager.experimentId);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-        //  manager.loadOffTargetSites();
-        //manager.updateExperiment();
     }
 
     public static Manager getManagerInstance() {
@@ -124,6 +104,12 @@ public class Manager {
     }
 
     public void loadMetaData(int column, String name, boolean qualitativeData) throws Exception {
+
+        // reset lists
+        vectors.clear();
+        guides.clear();
+        antibodies.clear();
+
 
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
@@ -168,7 +154,8 @@ public class Manager {
             if( cell0Data.equalsIgnoreCase("EDITOR")) {
                 if (data != null && !data.equals(""))
                     experiment.setExperimentName(data);
-                System.out.println(experiment.getExperimentName());
+                System.out.println("======");
+                System.out.println("exprec: "+experiment.getExperimentName());
             }
             metadata.put(cell1Data, data);
 
@@ -388,6 +375,7 @@ public class Manager {
         }
     }
 
+    /*
     public void loadStudy() throws Exception {
         FileInputStream fis = new FileInputStream(new File(fileName));
 //creating workbook instance that refers to .xls file
@@ -417,6 +405,7 @@ public class Manager {
         }
         dao.insertStudy(s);
     }
+    */
 
     public void loadData(long expRecId, int column, boolean qualitativeData) throws Exception {
         FileInputStream fis = new FileInputStream(fileName);
@@ -486,7 +475,7 @@ public class Manager {
     }
 
     public void loadData(ExperimentRecord expRec, int column, boolean qualitativeData) throws Exception {
-        FileInputStream fis = new FileInputStream(new File(fileName));
+        FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);
 
@@ -545,7 +534,7 @@ public class Manager {
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Edit Type")) {
                 result.setEditType(data);
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Measure is Normalized")) {
-                System.out.println("ignore");
+                //System.out.println("ignore");
             } else if (editingData || deliveryData) {
 
                 if (editingData)
@@ -584,58 +573,6 @@ public class Manager {
                     }
                 }
             }
-        }
-    }
-
-    public void loadMean(long expId) throws Exception {
-        List<ExperimentRecord> records = dao.getExpRecords(expId);
-        int maxSamples = 0;
-        for (ExperimentRecord record : records) {
-            ExperimentResultDetail resultDetail = new ExperimentResultDetail();
-            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
-            //BigDecimal average = new BigDecimal(0);
-            double average = 0;
-            int noOfSamples = 0;
-            for (ExperimentResultDetail result : experimentResults) {
-                noOfSamples = result.getNumberOfSamples();
-                if (maxSamples < noOfSamples)
-                    maxSamples = noOfSamples;
-
-                if (!result.getUnits().equalsIgnoreCase("signal")) {
-                    if (result.getResult() != null && !result.getResult().equals("")) {
-                        average += Double.valueOf(result.getResult());
-                        //average = average.add(new BigDecimal(result.getResult()));
-                    }
-                }
-                resultDetail = result;
-            }
-            //average = average.divide(new BigDecimal(noOfSamples),2, RoundingMode.HALF_UP);
-            average = average / noOfSamples;
-            average = Math.round(average * 100.0) / 100.0;
-            resultDetail.setReplicate(0);
-            resultDetail.setResult(String.valueOf(average));
-            // System.out.println(resultDetail.getResultId() + "," + resultDetail.getResult());
-            dao.insertExperimentResultDetail(resultDetail);
-
-        }
-        System.out.println("Max = " + maxSamples);
-        for (ExperimentRecord record : records) {
-            ExperimentResultDetail resultDetail = new ExperimentResultDetail();
-            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
-            for (ExperimentResultDetail result : experimentResults) {
-                if (resultDetail.getReplicate() == 0) {
-                    if (maxSamples > result.getNumberOfSamples()) {
-                        //System.out.println(maxSamples - result.getNumberOfSamples());
-                        for (int i = result.getNumberOfSamples() + 1; i <= maxSamples; i++) {
-                            resultDetail.setResultId(result.getResultId());
-                            resultDetail.setReplicate(i);
-                            resultDetail.setResult("NaN");
-                            dao.insertExperimentResultDetail(resultDetail);
-                        }
-                    }
-                }
-            }
-
         }
     }
 
@@ -685,7 +622,7 @@ public class Manager {
         if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
             guide.setGuide_id(new BigDecimal(metadata.get("SCGE ID").trim()).longValue());
             guides.add(guide.getGuide_id());
-            System.out.println("Got guide: " + guide.getGuide_id());
+            System.out.println("  Got guide by SCGE ID: " + guide.getGuide_id());
         } else {
             guide.setGuideDescription(metadata.get("Guide Description"));
             guide.setSource(metadata.get("Source"));
@@ -740,7 +677,7 @@ public class Manager {
                         }
                     }*/
             if (guide.getGuide_id() == 0 && (guide.getGuide() == null || guide.getGuide().equals("")))
-                System.out.println("No guide");
+                System.out.println("  No guide");
             else {
                 long guideId = dao.getGuideId(guide);
                 if (guideId == 0) {
@@ -748,8 +685,11 @@ public class Manager {
                     guideId = dao.insertGuide(guide);
                     guide.setGuide_id(guideId);
                     dao.insertGuideGenomeInfo(guide);
+                    System.out.println("  Inserted guide: " + guideId);
+                } else {
+                    guide.setGuide_id(guideId);
+                    System.out.println("  Got guide by matching against DB: " + guideId);
                 }
-                System.out.println("Inserted guide: " + guideId);
                 guides.add(guide.getGuide_id());
             }
         }
@@ -1140,6 +1080,60 @@ public class Manager {
         return null;
     }
 
+    // obsolete: use Mean class instead
+    public void loadMean(long expId) throws Exception {
+        List<ExperimentRecord> records = dao.getExpRecords(expId);
+        int maxSamples = 0;
+        for (ExperimentRecord record : records) {
+            ExperimentResultDetail resultDetail = new ExperimentResultDetail();
+            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
+            //BigDecimal average = new BigDecimal(0);
+            double average = 0;
+            int noOfSamples = 0;
+            for (ExperimentResultDetail result : experimentResults) {
+                noOfSamples = result.getNumberOfSamples();
+                if (maxSamples < noOfSamples)
+                    maxSamples = noOfSamples;
+
+                if (!result.getUnits().equalsIgnoreCase("signal")) {
+                    if (result.getResult() != null && !result.getResult().equals("")) {
+                        average += Double.valueOf(result.getResult());
+                        //average = average.add(new BigDecimal(result.getResult()));
+                    }
+                }
+                resultDetail = result;
+            }
+            //average = average.divide(new BigDecimal(noOfSamples),2, RoundingMode.HALF_UP);
+            average = average / noOfSamples;
+            average = Math.round(average * 100.0) / 100.0;
+            resultDetail.setReplicate(0);
+            resultDetail.setResult(String.valueOf(average));
+            // System.out.println(resultDetail.getResultId() + "," + resultDetail.getResult());
+            dao.insertExperimentResultDetail(resultDetail);
+
+        }
+        System.out.println("Max = " + maxSamples);
+        for (ExperimentRecord record : records) {
+            ExperimentResultDetail resultDetail = new ExperimentResultDetail();
+            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
+            for (ExperimentResultDetail result : experimentResults) {
+                if (resultDetail.getReplicate() == 0) {
+                    if (maxSamples > result.getNumberOfSamples()) {
+                        //System.out.println(maxSamples - result.getNumberOfSamples());
+                        for (int i = result.getNumberOfSamples() + 1; i <= maxSamples; i++) {
+                            resultDetail.setResultId(result.getResultId());
+                            resultDetail.setReplicate(i);
+                            resultDetail.setResult("NaN");
+                            dao.insertExperimentResultDetail(resultDetail);
+                        }
+                    }
+                }
+            }
+
+        }
+    }
+
+    // obsolete: use Mean class instead
     public void loadQualitativeMean(long expId) throws Exception {
 
         int insertedRows = 0;
@@ -1180,10 +1174,15 @@ public class Manager {
         }
 
         System.out.println("inserted rows with replicate 0: "+insertedRows);
-
-        System.exit(0);
     }
 
+    public LoadDAO getDao() {
+        return dao;
+    }
+
+    public void setDao(LoadDAO dao) {
+        this.dao = dao;
+    }
 }
 
 

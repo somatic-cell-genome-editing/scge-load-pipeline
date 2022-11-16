@@ -255,4 +255,31 @@ public class LoadDAO extends AbstractDAO {
     public Experiment getExperiment(long expId) throws Exception {
         return expDao.getExperiment(expId);
     }
+
+    public int deleteExperimentData(long expId) throws Exception {
+
+        int rowsDeleted = 0;
+
+        String sql = "delete from experiment_result_detail where result_id in (" +
+                " select result_id from experiment_result WHERE experiment_record_id in (select experiment_record_id from experiment_record where experiment_id = ?) " +
+                ")";
+        rowsDeleted += expDao.update(sql, expId);
+
+        sql = "delete from experiment_result WHERE experiment_record_id in (select experiment_record_id from experiment_record where experiment_id = ?)";
+        rowsDeleted += expDao.update(sql, expId);
+
+        sql = "delete from guide_associations where experiment_record_id in (select experiment_record_id from experiment_record where experiment_id = ?)";
+        rowsDeleted += expDao.update(sql, expId);
+
+        sql = "delete from vector_associations where experiment_record_id in (select experiment_record_id from experiment_record where experiment_id = ?)";
+        rowsDeleted += expDao.update(sql, expId);
+
+        sql = "delete from antibody_associations where experiment_record_id in (select experiment_record_id from experiment_record where experiment_id = ?)";
+        rowsDeleted += expDao.update(sql, expId);
+
+        sql = "delete from experiment_record where experiment_id = ?";
+        rowsDeleted += expDao.update(sql, expId);
+
+        return rowsDeleted;
+    }
 }
