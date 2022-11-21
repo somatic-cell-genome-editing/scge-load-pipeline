@@ -4,15 +4,15 @@ import edu.mcw.scge.Manager;
 import edu.mcw.scge.Mean;
 
 // study loaded on Nov 21, 2022
-public class Curiel {
+public class Sontheimer {
 
     public static void main(String[] args) {
 
         Manager manager = Manager.getManagerInstance();
 
-        manager.studyId = 1067;
-        manager.experimentId = 18000000009L;
-        manager.fileName = "data/Curiel-1067-1.xlsx";
+        manager.studyId = 1048;
+        manager.experimentId = 18000000068L;
+        manager.fileName = "data/Sontheimer-1048-1.xlsx";
         manager.expType = "In Vivo";
         manager.tier = 0;
 

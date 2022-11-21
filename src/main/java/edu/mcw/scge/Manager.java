@@ -39,9 +39,9 @@ public class Manager {
         MODEL,
         EXPERIMENT_DETAILS,
     }
-    public int studyId = 1066;
-    public long experimentId = 18000000060L;
-    public String fileName = "/test/Bankiewicz2.xlsx";
+    public int studyId = 0;
+    public long experimentId = 18000000000L;
+    public String fileName = "0.xlsx";
     public String expType = "In Vivo";
     public int tier = 0;
 
@@ -152,7 +152,8 @@ public class Manager {
             boolean isEndOfSection = cell1Data.equalsIgnoreCase("Related publication description");
 
 
-            if( cell0Data.equalsIgnoreCase("EDITOR")) {
+            if( cell0Data.equalsIgnoreCase("EDITOR")
+                || cell0Data.equalsIgnoreCase("Editors & Targets")) { // format v5
                 if (data != null && !data.equals(""))
                     experiment.setExperimentName(data);
                 System.out.println("======");
@@ -161,7 +162,8 @@ public class Manager {
             metadata.put(cell1Data, data);
 
             // EDITOR
-            if( cell0Data.equalsIgnoreCase("EDITOR") ) {
+            if( cell0Data.equalsIgnoreCase("EDITOR")
+                    || cell0Data.equalsIgnoreCase("EDITOR PROTEIN")) { // format v5
                 section = SECTION.EDITOR;
             }
             if( section==SECTION.EDITOR && isEndOfSection ) {
@@ -170,7 +172,7 @@ public class Manager {
             }
 
             // GUIDE
-            if( cell0Data.equalsIgnoreCase("GUIDE") ) {
+            if( cell0Data.equalsIgnoreCase("GUIDE") || cell0Data.equalsIgnoreCase("Guide RNA (gRNA)")) {
                 section = SECTION.GUIDE;
             }
             if (section==SECTION.GUIDE && isEndOfSection ) {
@@ -282,7 +284,8 @@ public class Manager {
             }
 
             // EXPERIMENT
-            if( cell0Data.equalsIgnoreCase("Experiment Details") ) {
+            if( cell0Data.equalsIgnoreCase("Experiment Details")
+                || cell0Data.equalsIgnoreCase("Other Experimental details") ) { // format v5
                 section = SECTION.EXPERIMENT_DETAILS;
             }
 
@@ -368,11 +371,11 @@ public class Manager {
             for (int antibodyId : antibodies)
                 dao.insertAntibodyAssoc(experimentRecId,antibodyId);
 
-            loadData(experimentRecId, column, qualitativeData);
+            loadDataInVitro(experimentRecId, column, qualitativeData);
             vectors.clear();
             guides.clear();
         } else {
-            loadData(experiment, column, qualitativeData);
+            loadDataInVivo(experiment, column, qualitativeData);
         }
     }
 
@@ -408,7 +411,7 @@ public class Manager {
     }
     */
 
-    public void loadData(long expRecId, int column, boolean qualitativeData) throws Exception {
+    public void loadDataInVitro(long expRecId, int column, boolean qualitativeData) throws Exception {
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);
@@ -452,6 +455,9 @@ public class Manager {
                     result.setUnits(data);
                 }
             }
+            if(true) {
+                throw new Exception("add processing of sections 'Biomarker Detection’ and ‘Other Measurement’ in addition to 'Editing Efficency' and 'Delivery Efficiency'");
+            }
             if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency") ||
                     cell1.getStringCellValue().equalsIgnoreCase("Delivery Efficiency")) {
 
@@ -475,15 +481,13 @@ public class Manager {
         }
     }
 
-    public void loadData(ExperimentRecord expRec, int column, boolean qualitativeData) throws Exception {
+    public void loadDataInVivo(ExperimentRecord expRec, int column, boolean qualitativeData) throws Exception {
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);
 
-        boolean editingData = false;
-        boolean deliveryData = false;
+        String expDataType = null;
         ExperimentResultDetail result = new ExperimentResultDetail();
-
 
         for (Row row : sheet) {
 
@@ -494,21 +498,33 @@ public class Manager {
 
             if (row.getRowNum() < 3 || cell1 == null)
                 continue;
+            String cell0ValU = cell0==null ? "" : cell0.getStringCellValue().toUpperCase();
 
             String data = getCellData(cell);
 
-
-            if (cell0 != null && cell0.getStringCellValue().equalsIgnoreCase("Editing Efficiency"))
-                editingData = true;
-
-            if (cell0 != null && cell0.getStringCellValue().equalsIgnoreCase("Delivery Efficiency"))
-                deliveryData = true;
+            switch( cell0ValU ) {
+                case "EDITING EFFICIENCY": // data format up to 5.3.x
+                case "EDITING DATA":       // data format 5.4
+                    expDataType = "Editing Efficiency";
+                    break;
+                case "DELIVERY EFFICIENCY": // data format up to 5.3.x
+                case "DELIVERY DATA":       // data format 5.4
+                    expDataType = "Delivery Efficiency";
+                    break;
+                case "BIOMARKER DETECTION": // data format up to 5.3.x
+                case "BIOMARKER DATA":      // data format 5.4
+                    expDataType = "Biomarker Detection";
+                    break;
+                case "OTHER MEASUREMENT": // data format up to 5.3.x
+                case "OTHER DATA":      // data format 5.4
+                    expDataType = "Other Measurement";
+                    break;
+            }
 
             if (cell1.getStringCellValue().equalsIgnoreCase("Data_File_Name") || cell1.getStringCellValue().equalsIgnoreCase("Related Protocol") ) {
-                editingData = false;
-                deliveryData = false;
-
+                expDataType = null;
             }
+
             if (cell1.getStringCellValue().equalsIgnoreCase("Assay Description") || cell1.getStringCellValue().equalsIgnoreCase("Assay_Description")) {
                 result.setAssayDescription(data);
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Biological/Transfection/Delivery Replicates") ||
@@ -536,11 +552,9 @@ public class Manager {
                 result.setEditType(data);
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Measure is Normalized")) {
                 //System.out.println("ignore");
-            } else if (editingData || deliveryData) {
+            } else if (expDataType!=null) {
 
-                if (editingData)
-                    result.setResultType("Editing Efficiency");
-                else result.setResultType("Delivery Efficiency");
+                result.setResultType(expDataType);
 
                 if (data != null && !data.equals("") && !data.equalsIgnoreCase("ND")) {
                     System.out.println(cell1);
@@ -620,46 +634,50 @@ public class Manager {
     }
 
     private void loadGuide(HashMap<String, String> metadata, Guide guide) throws Exception {
-        if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
-            guide.setGuide_id(new BigDecimal(metadata.get("SCGE ID").trim()).longValue());
+        String scgeId = metadata.get("SCGE ID");
+        if( !Utils.isStringEmpty(scgeId) ) {
+            guide.setGuide_id(new BigDecimal(scgeId).longValue());
             guides.add(guide.getGuide_id());
             System.out.println("  Got guide by SCGE ID: " + guide.getGuide_id());
-        } else {
-            guide.setGuideDescription(metadata.get("Guide Description"));
-            guide.setSource(metadata.get("Source"));
-            guide.setSpecies(metadata.get("Species"));
-            guide.setGrnaLabId(metadata.get("Lab gRNA Name/ID"));
-            guide.setGuide(metadata.get("Lab gRNA Name/ID"));
-            guide.setTargetLocus(metadata.get("Target Locus"));
-            guide.setTargetSequence(getUpperCase(metadata.get("Target Sequence")));
-            guide.setPam(getUpperCase(metadata.get("Target Sequence+PAM")));
-            guide.setAssembly(metadata.get("Genome Version"));
-            guide.setChr(metadata.get("Chromosome"));
-            guide.setStart(getInttoStringValue(metadata.get("Chromosome Start")));
-            guide.setStop(getInttoStringValue(metadata.get("Chromosome End")));
-            guide.setStrand(getStrand(metadata.get("Chromosome Strand")));
-            guide.setSpacerSequence(getUpperCase(metadata.get("Spacer Sequence")));
-            guide.setSpacerLength(metadata.get("Spacer Length"));
-            guide.setGuideFormat(metadata.get("Guide Format"));
-            guide.setSpecificityRatio(getSpecificityRatio(metadata.get("Specificity Ratio")));
-            guide.setStandardScaffoldSequence(metadata.get("Standard guide scaffold sequence?"));
-            guide.setIvtConstructSource(metadata.get("IVT construct Source"));
-            guide.setVectorId(metadata.get("Catalog#"));
-            guide.setVectorName(metadata.get("Lab Name/ID"));
-            guide.setVectorDescription(metadata.get("Vector Description"));
-            guide.setVectorType(metadata.get("Vector Type"));
-            guide.setAnnotatedMap(metadata.get("Annotated Map"));
-            guide.setModifications(getModifications(metadata.get("Modifications")));
-            guide.setForwardPrimer(metadata.get("Forward Primer"));
-            guide.setReversePrimer(metadata.get("Reverse Primer"));
-            guide.setRepeatSequence(getUpperCase(metadata.get("Repeat Sequence")));
-            guide.setLinkerSequence(getUpperCase(metadata.get("Linker Sequence")));
-            guide.setAntiRepeatSequence(getUpperCase(metadata.get("Anti Repeat Sequence")));
-            guide.setStemloop1Sequence(getUpperCase(metadata.get("StemLoop 1 Sequence")));
-            guide.setStemloop2Sequence(getUpperCase(metadata.get("StemLoop 2 Sequence")));
-            guide.setStemloop3Sequence(getUpperCase(metadata.get("StemLoop 3 Sequence")));
-            guide.setGuideCompatibility(metadata.get("Guide Compatibility"));
-            guide.setFullGuide(metadata.get("Full Guide Sequence"));
+            return;
+        }
+        guide.setGuide_id(0);
+
+        guide.setGuideDescription(metadata.get("Guide Description"));
+        guide.setSource(metadata.get("Source"));
+        guide.setSpecies(metadata.get("Species"));
+        guide.setGrnaLabId(metadata.get("Lab gRNA Name/ID"));
+        guide.setGuide(metadata.get("Lab gRNA Name/ID"));
+        guide.setTargetLocus(metadata.get("Target Locus"));
+        guide.setTargetSequence(getUpperCase(metadata.get("Target Sequence")));
+        guide.setPam(getUpperCase(metadata.get("Target Sequence+PAM")));
+        guide.setAssembly(metadata.get("Genome Version"));
+        guide.setChr(metadata.get("Chromosome"));
+        guide.setStart(getInttoStringValue(metadata.get("Chromosome Start")));
+        guide.setStop(getInttoStringValue(metadata.get("Chromosome End")));
+        guide.setStrand(getStrand(metadata.get("Chromosome Strand")));
+        guide.setSpacerSequence(getUpperCase(metadata.get("Spacer Sequence")));
+        guide.setSpacerLength(metadata.get("Spacer Length"));
+        guide.setGuideFormat(metadata.get("Guide Format"));
+        guide.setSpecificityRatio(getSpecificityRatio(metadata.get("Specificity Ratio")));
+        guide.setStandardScaffoldSequence(metadata.get("Standard guide scaffold sequence?"));
+        guide.setIvtConstructSource(metadata.get("IVT construct Source"));
+        guide.setVectorId(metadata.get("Catalog#"));
+        guide.setVectorName(metadata.get("Lab Name/ID"));
+        guide.setVectorDescription(metadata.get("Vector Description"));
+        guide.setVectorType(metadata.get("Vector Type"));
+        guide.setAnnotatedMap(metadata.get("Annotated Map"));
+        guide.setModifications(getModifications(metadata.get("Modifications")));
+        guide.setForwardPrimer(metadata.get("Forward Primer"));
+        guide.setReversePrimer(metadata.get("Reverse Primer"));
+        guide.setRepeatSequence(getUpperCase(metadata.get("Repeat Sequence")));
+        guide.setLinkerSequence(getUpperCase(metadata.get("Linker Sequence")));
+        guide.setAntiRepeatSequence(getUpperCase(metadata.get("Anti Repeat Sequence")));
+        guide.setStemloop1Sequence(getUpperCase(metadata.get("StemLoop 1 Sequence")));
+        guide.setStemloop2Sequence(getUpperCase(metadata.get("StemLoop 2 Sequence")));
+        guide.setStemloop3Sequence(getUpperCase(metadata.get("StemLoop 3 Sequence")));
+        guide.setGuideCompatibility(metadata.get("Guide Compatibility"));
+        guide.setFullGuide(metadata.get("Full Guide Sequence"));
   /* else if (cell1.getStringCellValue().equalsIgnoreCase("Off-target mutation detection method 1")) {
                         if(data != null && !data.equals(""))
                             offTarget.setDetectionMethod(data);
@@ -677,22 +695,22 @@ public class Manager {
                             offTargets.add(offTarget);
                         }
                     }*/
-            if (guide.getGuide_id() == 0 && (guide.getGuide() == null || guide.getGuide().equals("")))
-                System.out.println("  No guide");
-            else {
-                long guideId = dao.getGuideId(guide);
-                if (guideId == 0) {
-                    guide.setTier(tier);
-                    guideId = dao.insertGuide(guide);
-                    guide.setGuide_id(guideId);
-                    dao.insertGuideGenomeInfo(guide);
-                    System.out.println("  Inserted guide: " + guideId);
-                } else {
-                    guide.setGuide_id(guideId);
-                    System.out.println("  Got guide by matching against DB: " + guideId);
-                }
-                guides.add(guide.getGuide_id());
+
+        if( guide.getGuide_id() == 0 && Utils.isStringEmpty(guide.getGuide()) ) {
+            System.out.println("  No guide");
+        } else {
+            long guideId = dao.getGuideId(guide);
+            if (guideId == 0) {
+                guide.setTier(tier);
+                guideId = dao.insertGuide(guide);
+                guide.setGuide_id(guideId);
+                dao.insertGuideGenomeInfo(guide);
+                System.out.println("  Inserted guide: " + guideId);
+            } else {
+                guide.setGuide_id(guideId);
+                System.out.println("  Got guide by matching against DB: " + guideId);
             }
+            guides.add(guide.getGuide_id());
         }
     }
 
@@ -894,11 +912,16 @@ public class Manager {
     }
 
     private long loadAnimalModel(HashMap<String, String> metadata, Model model) throws Exception {
-        if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
-            model.setModelId(new BigDecimal(metadata.get("SCGE ID")).longValue());
-            System.out.println("Got model: " + model.getModelId());
+        String scgeId = metadata.get("SCGE ID");
+        if( Utils.isStringEmpty(scgeId) ) {
+            scgeId = metadata.get("SCGE OD"); // typo in format v5
+        }
+        if( !Utils.isStringEmpty(scgeId) ) {
+            model.setModelId(new BigDecimal(scgeId).longValue());
+            System.out.println("  Got model: " + model.getModelId());
             return model.getModelId();
         }
+
         model.setRrid(metadata.get("RRID link"));
         model.setParentalOrigin(metadata.get("Parental Origin"));
 
@@ -1082,6 +1105,7 @@ public class Manager {
     }
 
     // obsolete: use Mean class instead
+    @Deprecated
     public void loadMean(long expId) throws Exception {
         List<ExperimentRecord> records = dao.getExpRecords(expId);
         int maxSamples = 0;
