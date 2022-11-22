@@ -19,7 +19,7 @@ public class Gao {
             manager.studyId = 1005;
             manager.experimentId = 18000000012L;
 
-            int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
+            int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId, manager.studyId);
             manager.info("=== deleted rows for experiment "+manager.experimentId+": "+rowsDeleted);
 
             manager.expType = "In Vivo";
@@ -34,7 +34,7 @@ public class Gao {
             manager.studyId = 1051;
             manager.experimentId = 18000000069L;
 
-            rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
+            rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId, manager.studyId);
             manager.info("=== deleted rows for experiment "+manager.experimentId+": "+rowsDeleted);
 
             manager.expType = "In Vivo (2)";

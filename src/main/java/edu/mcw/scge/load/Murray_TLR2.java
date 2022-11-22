@@ -20,7 +20,7 @@ public class Murray_TLR2 {
             manager.expType = "In Vitro";
             manager.info("LOAD FROM FILE "+manager.fileName+" "+manager.expType);
 
-            int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
+            int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId, manager.studyId);
             manager.info("=== deleted rows : "+rowsDeleted);
 
             // 4 columns of numeric data
@@ -37,7 +37,7 @@ public class Murray_TLR2 {
             manager.expType = "In Vitro (2)";
             manager.info("LOAD FROM FILE "+manager.fileName+" "+manager.expType);
 
-            rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
+            rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId, manager.studyId);
             manager.info("=== deleted rows : "+rowsDeleted);
 
             // 4 columns of numeric data
@@ -54,7 +54,7 @@ public class Murray_TLR2 {
             manager.expType = "In Vitro (3)";
             manager.info("LOAD FROM FILE "+manager.fileName+" "+manager.expType);
 
-            rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
+            rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId, manager.studyId);
             manager.info("=== deleted rows : "+rowsDeleted);
 
             // 4 columns of numeric data

@@ -36,7 +36,8 @@ public class Manager {
         DS_NANOPARTICLE,
         DS_COMMERCIAL_REAGENT,
         DS_AMPHIPHILIC_PEPTIDE,
-        MODEL,
+        ANIMAL_MODEL,
+        CELL_MODEL,
         EXPERIMENT_DETAILS,
     }
 
@@ -119,7 +120,6 @@ public class Manager {
         XSSFSheet sheet = wb.getSheet(expType);      //creating a Sheet object to retrieve object
 
         SECTION section = SECTION.NONE;
-        boolean cellData = false;
         boolean traData = false;
         boolean antibodyData = false;
         Guide guide = new Guide();
@@ -180,12 +180,22 @@ public class Manager {
                 metadata.clear();
             }
 
-            // MODEL
+            // ANIMAL MODEL
             if (cell0Data.equalsIgnoreCase("Animal Model (AM)")) {
-                section = SECTION.MODEL;
+                section = SECTION.ANIMAL_MODEL;
             }
-            if (section == SECTION.MODEL && isEndOfSection) {
+            if (section == SECTION.ANIMAL_MODEL && isEndOfSection) {
                 experiment.setModelId(loadAnimalModel(metadata, model));
+                metadata.clear();
+            }
+
+            // CELL MODEL
+            if (cell0Data.equalsIgnoreCase("Cell model")
+             || cell0Data.equalsIgnoreCase("Cell/Organoid model")) {
+                section = SECTION.CELL_MODEL;
+            }
+            if (section == SECTION.CELL_MODEL && isEndOfSection) {
+                experiment.setModelId(loadCellModel(metadata, model));
                 metadata.clear();
             }
 
@@ -272,16 +282,6 @@ public class Manager {
                 metadata.clear();
             }
 
-
-            if (cellData ||
-                    (cell0 != null && cell0.getStringCellValue().equalsIgnoreCase("Cell model"))) {
-                cellData = true;
-                if (cell1.getStringCellValue().equalsIgnoreCase("Related publication description")) {
-                    experiment.setModelId(loadCellModel(metadata, model));
-                    cellData = false;
-                    metadata.clear();
-                }
-            }
 
             // EXPERIMENT
             if (cell0Data.equalsIgnoreCase("Experiment Details")
@@ -958,7 +958,7 @@ public class Manager {
     private long loadHrDonor(HashMap<String, String> metadata, HRDonor hrdonor) throws Exception {
         if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
             hrdonor.setId(new BigDecimal(metadata.get("SCGE ID")).longValue());
-            info(" Got HrDonor " + hrdonor.getId());
+            info(" got HrDonor " + hrdonor.getId());
             return hrdonor.getId();
         }
         hrdonor.setSource(metadata.get("Source"));
@@ -974,8 +974,8 @@ public class Manager {
             if (hrdonorId == 0) {
                 hrdonor.setTier(tier);
                 hrdonorId = dao.insertHrdonor(hrdonor);
-                info(" Inserted HrDonor " + hrdonorId);
-            } else info(" Got HrDonor " + hrdonorId);
+                info(" inserted HrDonor " + hrdonorId);
+            } else info(" got HrDonor " + hrdonorId);
             return hrdonorId;
         }
     }
@@ -1149,6 +1149,10 @@ public class Manager {
 
     public void setDao(LoadDAO dao) {
         this.dao = dao;
+    }
+
+    public Logger getLog() {
+        return log;
     }
 }
 

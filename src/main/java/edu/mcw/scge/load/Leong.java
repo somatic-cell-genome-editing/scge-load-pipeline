@@ -21,7 +21,7 @@ public class Leong {
         try {
             manager.info("LOAD FROM FILE "+manager.fileName);
 
-            int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
+            int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId, manager.studyId);
             manager.info("=== deleted rows : "+rowsDeleted);
 
             // 4 columns of numeric data

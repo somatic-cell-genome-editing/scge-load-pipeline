@@ -17,7 +17,7 @@ public class Sontheimer {
         manager.tier = 0;
 
         try {
-            int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
+            int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId, manager.studyId);
             System.out.println("=== deleted rows for experiment "+manager.experimentId+": "+rowsDeleted);
 
             for( int column=3; column<3+4; column++ ) { // 0-based column in the excel sheet

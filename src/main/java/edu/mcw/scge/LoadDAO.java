@@ -122,6 +122,7 @@ public class LoadDAO extends AbstractDAO {
     public void insertAntibodyAssoc(long expRecId,int antibodyId) throws Exception {
         antibodyDao.insertAntibodyAssoc(expRecId,antibodyId);
     }
+
     public long insertHrdonor(HRDonor a) throws Exception{
         return hrDonorDao.insertHRDonor(a);
     }
@@ -129,6 +130,7 @@ public class LoadDAO extends AbstractDAO {
     public long getHrdonorId(HRDonor a) throws Exception {
         return hrDonorDao.getHRDonorId(a);
     }
+
     public void insertOffTarget(OffTarget offTarget) throws Exception {
         OffTargetDao dao = new OffTargetDao();
         dao.insertOffTarget(offTarget);
@@ -256,9 +258,14 @@ public class LoadDAO extends AbstractDAO {
         return expDao.getExperiment(expId);
     }
 
-    public int deleteExperimentData(long expId) throws Exception {
+    public int deleteExperimentData(long expId, long studyId) throws Exception {
 
         int rowsDeleted = 0;
+
+        Experiment e = getExperiment(expId);
+        if( e.getStudyId()!=studyId ) {
+            throw new Exception(expId+" has study "+e.getStudyId()+"  but you passed different study id: "+studyId);
+        }
 
         String sql = "delete from experiment_result_detail where result_id in (" +
                 " select result_id from experiment_result WHERE experiment_record_id in (select experiment_record_id from experiment_record where experiment_id = ?) " +
