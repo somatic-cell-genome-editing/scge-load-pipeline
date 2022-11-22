@@ -49,6 +49,7 @@ public class Manager {
     Set<Long> vectors = new TreeSet<>();
     Set<Long> guides = new TreeSet<>();
     Set<Integer> antibodies = new TreeSet<>();
+    List<OffTarget> offTargets = new ArrayList<>();
 
     public static void main(String[] args) throws Exception {
 
@@ -128,8 +129,6 @@ public class Manager {
         Vector vector = new Vector();
         ApplicationMethod method = new ApplicationMethod();
         HRDonor hrDonor = new HRDonor();
-        OffTarget offTarget = new OffTarget();
-        List<OffTarget> offTargets = new ArrayList<>();
 
         HashMap<String, String> metadata = new HashMap<>();
         ExperimentRecord experiment = new ExperimentRecord();
@@ -358,66 +357,18 @@ public class Manager {
         }
 
         if (expType.contains("Vitro")) {
-            long experimentRecId = dao.insertExperimentRecord(experiment);
-            for (long guideId : guides) {
-                dao.insertGuideAssoc(experimentRecId, guideId);
-                for (OffTarget o : offTargets) {
-                    o.setGuideId(guideId);
-                    dao.insertOffTarget(o);
-                }
-            }
-            for (long vectorId : vectors)
-                dao.insertVectorAssoc(experimentRecId, vectorId);
-
-            for (int antibodyId : antibodies)
-                dao.insertAntibodyAssoc(experimentRecId, antibodyId);
-
-            loadDataInVitro(experimentRecId, column, qualitativeData);
-            vectors.clear();
-            guides.clear();
+            loadDataInVitro(experiment, column, qualitativeData);
         } else {
             loadDataInVivo(experiment, column, qualitativeData);
         }
     }
 
-    /*
-    public void loadStudy() throws Exception {
-        FileInputStream fis = new FileInputStream(new File(fileName));
-//creating workbook instance that refers to .xls file
-        XSSFWorkbook wb = new XSSFWorkbook(fis);
-        XSSFSheet sheet = wb.getSheetAt(0);     //creating a Sheet object to retrieve object
-        Study s = new Study();
 
-        for (Row row : sheet) {
-            Cell cell0 = row.getCell(0);
-            Cell cell1 = row.getCell(1);
-            Cell cell = row.getCell(2);
-            String data;
-            if (cell.getCellType() == Cell.CELL_TYPE_STRING || cell.getCellType() == Cell.CELL_TYPE_BLANK)
-                data = cell.getStringCellValue();
-            else data = String.valueOf(cell.getNumericCellValue());
-            if (cell1.getStringCellValue().equalsIgnoreCase("PI_email")) {
-                Person p = dao.getPersonByEmail(data);
-                s.setLabId(p.getInstitution());
-                s.setPiId(p.getId());
-                s.setTier(1);
-                s.setSubmissionDate(new Date());
-            } else if (cell1.getStringCellValue().equalsIgnoreCase("POC_email")) {
-                Person p = dao.getPersonByEmail(data);
-                s.setSubmitterId(p.getId());
-            }
-
-        }
-        dao.insertStudy(s);
-    }
-    */
-
-    public void loadDataInVitro(long expRecId, int column, boolean qualitativeData) throws Exception {
+    public void loadDataInVitro(ExperimentRecord experimentRecord, int column, boolean qualitativeData) throws Exception {
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);
         ExperimentResultDetail result = new ExperimentResultDetail();
-        result.setExperimentRecordId(expRecId);
 
         for (Row row : sheet) {
             Cell cell1 = row.getCell(1);
@@ -456,16 +407,31 @@ public class Manager {
                     result.setUnits(data);
                 }
             }
-            if (true) {
-                throw new Exception("add processing of sections 'Biomarker Detection’ and ‘Other Measurement’ in addition to 'Editing Efficency' and 'Delivery Efficiency'");
-            }
             if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency") ||
                     cell1.getStringCellValue().equalsIgnoreCase("Delivery Efficiency")) {
+                // todo: throw new Exception("add processing of sections 'Biomarker Detection’ and ‘Other Measurement’ in addition to 'Editing Efficency' and 'Delivery Efficiency'");
 
                 if (data != null && !data.equals("")) {
                     if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency"))
                         result.setResultType("Editing Efficiency");
                     else result.setResultType("Delivery Efficiency");
+
+                    long expRecId = dao.insertExperimentRecord(experimentRecord);
+                    result.setExperimentRecordId(expRecId);
+
+                    for (long guideId : guides) {
+                        dao.insertGuideAssoc(expRecId, guideId);
+                        for (OffTarget o : offTargets) {
+                            o.setGuideId(guideId);
+                            dao.insertOffTarget(o);
+                        }
+                    }
+                    for (long vectorId : vectors)
+                        dao.insertVectorAssoc(expRecId, vectorId);
+
+                    for (int antibodyId : antibodies)
+                        dao.insertAntibodyAssoc(expRecId, antibodyId);
+
                     long resultId = dao.insertExperimentResult(result);
                     String valueString = data;
                     String[] values = valueString.split(",");
@@ -589,48 +555,6 @@ public class Manager {
                     }
                 }
             }
-        }
-    }
-
-    public void loadOffTargetSites() throws Exception {
-        try {
-            BufferedReader br = new BufferedReader(new FileReader("E:\\Tsai_Submission 1_ChangeSeq_Reads.csv"));
-            String line = "";
-            boolean start = false;
-            List<Guide> guides = dao.getAllGuides();
-            HashMap<String, Long> guideIds = new HashMap<>();
-            for (Guide g : guides) {
-                guideIds.put(g.getGuide(), g.getGuide_id());
-            }
-            while ((line = br.readLine()) != null) {
-                String[] data = line.split(",");
-
-                if (start) {
-                    OffTargetSite o = new OffTargetSite();
-                    o.setOfftargetSequence(data[1]);
-                    o.setChromosome(data[2]);
-                    o.setStart(data[3]);
-                    o.setStop(data[4]);
-                    o.setStrand(data[5]);
-                    o.setMismatches(Integer.parseInt(data[6]));
-                    o.setTarget(data[7]);
-                    o.setSeqType("Change_seq");
-                    o.setNoOfReads(Integer.parseInt(data[8]));
-                    if (guideIds.containsKey(data[0])) {
-                        o.setGuideId(guideIds.get(data[0]));
-                        dao.insertOffTargetSite(o);
-                    } else {
-                        String guide = data[0].replace("site_", "site_0");
-                        if (guideIds.containsKey(guide)) {
-                            o.setGuideId(guideIds.get(guide));
-                            dao.insertOffTargetSite(o);
-                        } else log.debug(studyId + " " + experimentId + " " + data[0]);
-                    }
-                }
-                start = true;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 

@@ -16,9 +16,9 @@ public class Murray_TLR2 {
         manager.tier = 0;
 
         try {
-            manager.info("LOAD FROM FILE "+manager.fileName+" "+manager.expType);
             manager.experimentId = 18000000070L;
             manager.expType = "In Vitro";
+            manager.info("LOAD FROM FILE "+manager.fileName+" "+manager.expType);
 
             int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
             manager.info("=== deleted rows : "+rowsDeleted);
@@ -30,6 +30,39 @@ public class Murray_TLR2 {
             }
             manager.info("=== numeric metadata loaded");
 
+            Mean.loadMean(manager.experimentId, manager);
+
+
+            manager.experimentId = 18000000071L;
+            manager.expType = "In Vitro (2)";
+            manager.info("LOAD FROM FILE "+manager.fileName+" "+manager.expType);
+
+            rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
+            manager.info("=== deleted rows : "+rowsDeleted);
+
+            // 4 columns of numeric data
+            for( int column=3; column<3+3; column++ ) { // 0-based column in the excel sheet
+                String name = "Condition 1"; //exp record name to be loaded, if not present
+                manager.loadMetaData(column, name, false);
+            }
+            manager.info("=== numeric metadata loaded");
+
+            Mean.loadMean(manager.experimentId, manager);
+
+
+            manager.experimentId = 18000000072L;
+            manager.expType = "In Vitro (3)";
+            manager.info("LOAD FROM FILE "+manager.fileName+" "+manager.expType);
+
+            rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
+            manager.info("=== deleted rows : "+rowsDeleted);
+
+            // 4 columns of numeric data
+            for( int column=3; column<3+3; column++ ) { // 0-based column in the excel sheet
+                String name = "Condition 1"; //exp record name to be loaded, if not present
+                manager.loadMetaData(column, name, false);
+            }
+            manager.info("=== numeric metadata loaded");
 
             Mean.loadMean(manager.experimentId, manager);
 

@@ -1,3 +1,6 @@
+Nov 22, 2022
+  updated loading of In Vitro data
+
 Nov 15, 2022
   added Saltzman project: study_id=1047, exp_id=18000000058
 
