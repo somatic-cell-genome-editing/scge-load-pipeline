@@ -24,7 +24,7 @@ public class Sontheimer {
                 String name = "Condition 1"; //exp record name to be loaded, if not present
                 manager.loadMetaData(column, name, false);
             }
-            Mean.loadMean(manager.experimentId, manager.getDao());
+            Mean.loadMean(manager.experimentId, manager);
         } catch (Exception e) {
             e.printStackTrace();
         }

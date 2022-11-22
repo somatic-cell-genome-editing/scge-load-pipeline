@@ -18,13 +18,13 @@ public class Curiel {
 
         try {
             int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
-            System.out.println("=== deleted rows for experiment "+manager.experimentId+": "+rowsDeleted);
+            manager.info("=== deleted rows for experiment "+manager.experimentId+": "+rowsDeleted);
 
             for( int column=3; column<3+4; column++ ) { // 0-based column in the excel sheet
                 String name = "Condition 1"; //exp record name to be loaded, if not present
                 manager.loadMetaData(column, name, false);
             }
-            Mean.loadMean(manager.experimentId, manager.getDao());
+            Mean.loadMean(manager.experimentId, manager);
         } catch (Exception e) {
             e.printStackTrace();
         }

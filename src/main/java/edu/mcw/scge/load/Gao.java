@@ -20,14 +20,14 @@ public class Gao {
             manager.experimentId = 18000000012L;
 
             int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
-            System.out.println("=== deleted rows for experiment "+manager.experimentId+": "+rowsDeleted);
+            manager.info("=== deleted rows for experiment "+manager.experimentId+": "+rowsDeleted);
 
             manager.expType = "In Vivo";
             for( int column = 3; column < 3+3; column++ ) { // 0-based column in the excel sheet
                 String name = "Condition 1"; //exp record name to be loaded, if not present
                 manager.loadMetaData(column, name, false);
             }
-            Mean.loadMean(manager.experimentId, manager.getDao());
+            Mean.loadMean(manager.experimentId, manager);
 
             ///////
 
@@ -35,14 +35,14 @@ public class Gao {
             manager.experimentId = 18000000069L;
 
             rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId);
-            System.out.println("=== deleted rows for experiment "+manager.experimentId+": "+rowsDeleted);
+            manager.info("=== deleted rows for experiment "+manager.experimentId+": "+rowsDeleted);
 
             manager.expType = "In Vivo (2)";
             for (int column = 3; column < 3+2; column++) { // 0-based column in the excel sheet
                 String name = "Condition 1"; //exp record name to be loaded, if not present
                 manager.loadMetaData(column, name, false);
             }
-            Mean.loadMean(manager.experimentId, manager.getDao());
+            Mean.loadMean(manager.experimentId, manager);
 
         } catch (Exception e) {
             e.printStackTrace();

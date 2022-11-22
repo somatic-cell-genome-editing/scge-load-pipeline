@@ -8,9 +8,9 @@ import java.util.List;
 
 public class Mean {
 
-    static public void loadMean(long expId, LoadDAO dao) throws Exception {
+    static public void loadMean(long expId, Manager manager) throws Exception {
 
-        List<ExperimentRecord> records = dao.getExpRecords(expId);
+        List<ExperimentRecord> records = manager.getDao().getExpRecords(expId);
 
 
         List<ExperimentRecord> numericRecords = new ArrayList<>();
@@ -19,7 +19,7 @@ public class Mean {
         // determine which records are numeric, which are signal
         for (ExperimentRecord record : records) {
 
-            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
+            List<ExperimentResultDetail> experimentResults = manager.getDao().getExperimentalResults(record.getExperimentRecordId());
 
             int noOfSamples = 0;
             int signalSamples = 0;
@@ -38,21 +38,22 @@ public class Mean {
             }
         }
 
-        System.out.println("MEAN:  "+numericRecords.size()+" numeric records, "+signalRecords.size()+" signal records");
+        manager.info("MEAN:  "+numericRecords.size()+" numeric records, "+signalRecords.size()+" signal records");
 
         if( !numericRecords.isEmpty() ) {
-            loadNumericMean(numericRecords, dao);
-            System.out.println("   numeric mean ok");
+            loadNumericMean(numericRecords, manager);
+            manager.debug("   numeric mean ok");
         }
 
         if( !signalRecords.isEmpty() ) {
-            loadSignalMean(signalRecords, dao);
-            System.out.println("   signal mean ok");
+            loadSignalMean(signalRecords, manager);
+            manager.debug("   signal mean ok");
         }
     }
 
-    static void loadNumericMean(List<ExperimentRecord> records, LoadDAO dao) throws Exception {
+    static void loadNumericMean(List<ExperimentRecord> records, Manager manager) throws Exception {
 
+        LoadDAO dao = manager.getDao();
         int maxSamples = 0;
         for (ExperimentRecord record : records) {
             ExperimentResultDetail resultDetail = new ExperimentResultDetail();
@@ -67,8 +68,11 @@ public class Mean {
 
                 if (!result.getUnits().equalsIgnoreCase("signal")) {
                     if (result.getResult() != null && !result.getResult().equals("")) {
-                        average += Double.valueOf(result.getResult());
-                        //average = average.add(new BigDecimal(result.getResult()));
+                        if( result.getResult().contains("Not measured") ) {
+                            // do nothing -- NaN
+                        } else {
+                            average += Double.valueOf(result.getResult());
+                        }
                     }
                 }
                 resultDetail = result;
@@ -80,10 +84,9 @@ public class Mean {
             resultDetail.setResult(String.valueOf(average));
             // System.out.println(resultDetail.getResultId() + "," + resultDetail.getResult());
             dao.insertExperimentResultDetail(resultDetail);
-
         }
 
-        System.out.println("    Max nr of numeric samples = " + maxSamples);
+        manager.debug("    Max nr of numeric samples = " + maxSamples);
 
         for (ExperimentRecord record : records) {
             ExperimentResultDetail resultDetail = new ExperimentResultDetail();
@@ -103,8 +106,9 @@ public class Mean {
         }
     }
 
-    static void loadSignalMean(List<ExperimentRecord> records, LoadDAO dao) throws Exception {
+    static void loadSignalMean(List<ExperimentRecord> records, Manager manager) throws Exception {
 
+        LoadDAO dao = manager.getDao();
         int insertedRows = 0;
         for (ExperimentRecord record : records) {
             List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());

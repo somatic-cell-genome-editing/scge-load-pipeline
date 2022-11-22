@@ -1,6 +1,8 @@
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
     <bean id="manager" class="edu.mcw.scge.Manager">
-        </bean>
+        <property name="dao" ref="dao"/>
+    </bean>
+
     <bean id="dao" class="edu.mcw.scge.LoadDAO"></bean>
 </beans>
