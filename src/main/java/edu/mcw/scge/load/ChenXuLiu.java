@@ -5,6 +5,7 @@ import edu.mcw.scge.Mean;
 
 // study loaded on Nov 16, 2022
 // revised data loaded on Nov 21, 2022
+// revised data loaded on Nov 23, 2022
 public class ChenXuLiu {
 
     public static void main(String[] args) {
@@ -12,7 +13,7 @@ public class ChenXuLiu {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1072;
-        manager.fileName = "data/ChenXuLiu2.xlsx";
+        manager.fileName = "data/ChenXuLiu-1072-1.xlsx";
         manager.tier = 0;
         manager.experimentId = 18000000065L;
         manager.expType = "In Vivo - Fig1-3 ";

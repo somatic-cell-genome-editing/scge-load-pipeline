@@ -1,5 +1,6 @@
 package edu.mcw.scge;
 
+import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.dao.*;
 
 import edu.mcw.scge.dao.implementation.*;
@@ -64,8 +65,47 @@ public class LoadDAO extends AbstractDAO {
     public long getEditorId(Editor editor) throws Exception {
         return editorDao.getEditorId(editor);
     }
+
     public long getDeliveryId(Delivery delivery) throws Exception {
         return deliveryDao.getDeliveryId(delivery);
+    }
+
+    public boolean updateDeliveryIfNeeded(Delivery ds) throws Exception {
+
+        List<Delivery> list = deliveryDao.getDeliverySystemsById(ds.getId());
+        if( list==null && list.isEmpty() ) {
+            return false;
+        }
+        Delivery dsInDb = list.get(0);
+
+        boolean isMatching =
+                Utils.stringsAreEqual(ds.getType(), dsInDb.getType())
+            && Utils.stringsAreEqual(ds.getSubtype(), dsInDb.getSubtype())
+            && Utils.stringsAreEqual(ds.getName(), dsInDb.getName())
+            && Utils.stringsAreEqual(ds.getSource(), dsInDb.getSource())
+            && Utils.stringsAreEqual(ds.getDescription(), dsInDb.getDescription())
+            && Utils.stringsAreEqual(ds.getLabId(), dsInDb.getLabId())
+            && Utils.stringsAreEqual(ds.getAnnotatedMap(), dsInDb.getAnnotatedMap())
+            && Utils.stringsAreEqual(ds.getRrid(), dsInDb.getRrid())
+            && Utils.stringsAreEqual(ds.getNpSize(), dsInDb.getNpSize())
+            && Utils.stringsAreEqual(ds.getMolTargetingAgent(), dsInDb.getMolTargetingAgent())
+            && Utils.stringsAreEqual(ds.getSequence(), dsInDb.getSequence())
+            && Utils.stringsAreEqual(ds.getZetaPotential(), dsInDb.getZetaPotential())
+            && Utils.stringsAreEqual(ds.getNpPolydispersityIndex(), dsInDb.getNpPolydispersityIndex());
+
+        if( !isMatching ) {
+            // no match
+            if( dsInDb.getTier()==0 ) {
+                deliveryDao.updateDelivery(ds);
+                return true;
+            }
+
+            // no match, ds tier in db >0 -- report a problem
+            Manager.getManagerInstance().info("*** delivery system "+ds.getId()+" data in db differs from incoming -- ds tier in db "+dsInDb.getTier());
+            return false;
+        }
+
+        return false; // match -- nothing to do
     }
 
     public long insertExperimentRecord(ExperimentRecord experiment) throws Exception{
@@ -163,12 +203,81 @@ public class LoadDAO extends AbstractDAO {
         OffTargetSiteDao odao = new OffTargetSiteDao();
         odao.insertOffTargetSite(o);
     }
-    public void updateGuide(long oldId,long newId) throws Exception{
-        String sql = "update guide set guide_id = ? where guide_id = ?";
 
-        update(sql,newId,oldId);
+    public boolean updateGuideIfNeeded(Guide guide) throws Exception {
 
+        List<Guide> guides = guideDao.getGuideById(guide.getGuide_id());
+        if( guides==null && guides.isEmpty() ) {
+            return false;
+        }
+        Guide guideInDb = guides.get(0);
 
+        boolean isMatching =
+                Utils.stringsAreEqual(guide.getSpecies(), guideInDb.getSpecies())
+             && Utils.stringsAreEqual(guide.getSource(), guideInDb.getSource())
+             && Utils.stringsAreEqual(guide.getPam(), guideInDb.getPam())
+                && Utils.stringsAreEqual(guide.getGrnaLabId(), guideInDb.getGrnaLabId())
+                && Utils.stringsAreEqual(guide.getGuideFormat(), guideInDb.getGuideFormat())
+                && Utils.stringsAreEqual(guide.getSpacerSequence(), guideInDb.getSpacerSequence())
+                && Utils.stringsAreEqual(guide.getSpacerLength(), guideInDb.getSpacerLength())
+                && Utils.stringsAreEqual(guide.getRepeatSequence(), guideInDb.getRepeatSequence())
+                && Utils.stringsAreEqual(guide.getGuide(), guideInDb.getGuide())
+                && Utils.stringsAreEqual(guide.getGuideDescription(), guideInDb.getGuideDescription())
+                && Utils.stringsAreEqual(guide.getForwardPrimer(), guideInDb.getForwardPrimer())
+                && Utils.stringsAreEqual(guide.getReversePrimer(), guideInDb.getReversePrimer())
+                && Utils.stringsAreEqual(guide.getLinkerSequence(), guideInDb.getLinkerSequence())
+                && Utils.stringsAreEqual(guide.getAntiRepeatSequence(), guideInDb.getAntiRepeatSequence())
+                && Utils.stringsAreEqual(guide.getStemloop1Sequence(), guideInDb.getStemloop1Sequence())
+                && Utils.stringsAreEqual(guide.getStemloop2Sequence(), guideInDb.getStemloop2Sequence())
+                && Utils.stringsAreEqual(guide.getStemloop3Sequence(), guideInDb.getStemloop3Sequence())
+                && Utils.stringsAreEqual(guide.getStandardScaffoldSequence(), guideInDb.getStandardScaffoldSequence())
+                && Utils.stringsAreEqual(guide.getModifications(), guideInDb.getModifications())
+                && Utils.stringsAreEqual(guide.getIvtConstructSource(), guideInDb.getIvtConstructSource())
+                && Utils.stringsAreEqual(guide.getVectorId(), guideInDb.getVectorId())
+                && Utils.stringsAreEqual(guide.getVectorName(), guideInDb.getVectorName())
+                && Utils.stringsAreEqual(guide.getVectorDescription(), guideInDb.getVectorDescription())
+                && Utils.stringsAreEqual(guide.getVectorType(), guideInDb.getVectorType())
+                && Utils.stringsAreEqual(guide.getAnnotatedMap(), guideInDb.getAnnotatedMap())
+                && Utils.stringsAreEqual(guide.getSpecificityRatio(), guideInDb.getSpecificityRatio())
+                && Utils.stringsAreEqual(guide.getFullGuide(), guideInDb.getFullGuide())
+                && Utils.stringsAreEqual(guide.getGuideCompatibility(), guideInDb.getGuideCompatibility());
+
+        if( !isMatching ) {
+            // no match
+            if( guideInDb.getTier()==0 ) {
+                guideDao.updateGuide(guide);
+                return true;
+            }
+
+            // no match, guide tier in db >0 -- report a problem
+            Manager.getManagerInstance().info("*** guide "+guide.getGuide_id()+" data in db differs from incoming -- guide tier in db "+guideInDb.getTier());
+            return false;
+        }
+
+        // guide data matches -- check genome info data
+        isMatching =
+                Utils.stringsAreEqual(guide.getTargetLocus(), guideInDb.getTargetLocus()) &&
+            Utils.stringsAreEqual(guide.getTargetSequence(), guideInDb.getTargetSequence()) &&
+            Utils.stringsAreEqual(guide.getAssembly(), guideInDb.getAssembly()) &&
+            Utils.stringsAreEqual(guide.getChr(), guideInDb.getChr()) &&
+            Utils.stringsAreEqual(guide.getStart(), guideInDb.getStart()) &&
+            Utils.stringsAreEqual(guide.getStop(), guideInDb.getStop()) &&
+            Utils.stringsAreEqual(guide.getStrand(), guideInDb.getStrand()) &&
+            Utils.stringsAreEqual(guide.getSpecies(), guideInDb.getSpecies());
+
+        if( !isMatching ) {
+            // no match
+            if( guideInDb.getTier()==0 ) {
+                guideDao.updateGenomeInfo(guide);
+                return true;
+            }
+
+            // no match, guide tier in db >0 -- report a problem
+            Manager.getManagerInstance().info("*** guide "+guide.getGuide_id()+" data in db differs from incoming -- guide tier in db "+guideInDb.getTier());
+            return false;
+        } else {
+            return false; // match -- nothing to do
+        }
     }
     public void updateGuideAssoc(long oldId,long newId) throws Exception{
         String sql = "update guide_associations set guide_id = ? where guide_id = ?";
@@ -231,7 +340,19 @@ public class LoadDAO extends AbstractDAO {
         */
     }
 
-    public void updateExperiment(long oldId,long newId) throws Exception{
+    public void updateExperimentName(long expId, String newName) throws Exception {
+        String sql = "UPDATE experiment SET name=? WHERE experiment_id=?";
+
+        update(sql, newName, expId);
+    }
+
+    public void updateExperimentDesc(long expId, String newDesc) throws Exception {
+        String sql = "UPDATE experiment SET description=? WHERE experiment_id=?";
+
+        update(sql, newDesc, expId);
+    }
+
+    public void updateExperiment(long oldId,long newId) throws Exception {
         String sql = "update experiment set experiment_id = ? where experiment_id = ?";
 
         update(sql,newId,oldId);

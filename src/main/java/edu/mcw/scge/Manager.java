@@ -151,6 +151,25 @@ public class Manager {
             String cell1Data = cell1 == null ? "" : cell1.getStringCellValue();
             boolean isEndOfSection = cell1Data.equalsIgnoreCase("Related publication description");
 
+            // update experiment name and description if needed
+            if( section==SECTION.NONE && cell1Data.equalsIgnoreCase("Experiment Title") && !Utils.isStringEmpty(data) ) {
+                String expName = data.trim();
+                Experiment e = getDao().getExperiment(experimentId);
+                if( !Utils.stringsAreEqual(expName, e.getName()) ) {
+                    e.setName(expName);
+                    getDao().updateExperimentName(experimentId, expName);
+                    info("   updated experiment name to ["+expName+"]");
+                }
+            }
+            if( section==SECTION.NONE && cell1Data.equalsIgnoreCase("Experiment Description") && !Utils.isStringEmpty(data) ) {
+                String expDesc = data.trim();
+                Experiment e = getDao().getExperiment(experimentId);
+                if( !Utils.stringsAreEqual(expDesc, e.getDescription()) ) {
+                    e.setName(expDesc);
+                    getDao().updateExperimentDesc(experimentId, expDesc);
+                    info("   updated experiment description to ["+expDesc+"]");
+                }
+            }
 
             if (cell0Data.equalsIgnoreCase("EDITOR")
                     || cell0Data.equalsIgnoreCase("Editors & Targets")) { // format v5
@@ -634,6 +653,9 @@ public class Manager {
             } else {
                 guide.setGuide_id(guideId);
                 info("  Got guide by matching against DB: " + guideId);
+                if( dao.updateGuideIfNeeded(guide) ) {
+                    info("    guide updated in db");
+                }
             }
             guides.add(guide.getGuide_id());
         }
@@ -719,95 +741,128 @@ public class Manager {
     private long loadProtienConjugate(HashMap<String, String> metadata, Delivery delivery) throws Exception {
         if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
             delivery.setId(new BigDecimal(metadata.get("SCGE ID")).longValue());
+            return delivery.getId();
         }
+        delivery.setId(0);
 
         delivery.setSource(metadata.get("Source"));
         delivery.setLabId(metadata.get("Lab Name/ID"));
         delivery.setDescription(metadata.get("PCJ Description"));
         delivery.setType("Protein Conjugate");
-        if (delivery.getId() == 0 && (delivery.getLabId() == null || delivery.getLabId().equals("")))
-            return 0;
-        else {
-            if (delivery.getId() == 0) {
-                long deliveryId = dao.getDeliveryId(delivery);
-                if (deliveryId == 0) {
-                    delivery.setTier(tier);
-                    deliveryId = dao.insertDelivery(delivery);
-                }
-                return deliveryId;
-            }
+
+        if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
         }
+
+        long deliveryId = dao.getDeliveryId(delivery);
+        if (deliveryId == 0) {
+            delivery.setTier(tier);
+            deliveryId = dao.insertDelivery(delivery);
+            delivery.setId(deliveryId);
+        } else {
+            info("  Got Protein Conjugate by matching against DB: " + deliveryId);
+
+            delivery.setId(deliveryId);
+            if( dao.updateDeliveryIfNeeded(delivery) ) {
+                info("    Protein Conjugate data updated in db");
+            }
+        }
+        return deliveryId;
     }
 
     private long loadVirusParticle(HashMap<String, String> metadata, Delivery delivery) throws Exception {
         if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
             delivery.setId(new BigDecimal(metadata.get("SCGE ID")).longValue());
+            return delivery.getId();
         }
+        delivery.setId(0);
         delivery.setSource(metadata.get("Source"));
         delivery.setLabId(metadata.get("Lab Name/ID"));
         delivery.setName(metadata.get("Lab Name/ID"));
         delivery.setDescription(metadata.get("VLP Description"));
         delivery.setType("Virus Like Particle");
-        if (delivery.getId() == 0 && (delivery.getLabId() == null || delivery.getLabId().equals("")))
-            return 0;
-        else {
-            if (delivery.getId() == 0) {
-                long deliveryId = dao.getDeliveryId(delivery);
-                if (deliveryId == 0) {
-                    delivery.setTier(tier);
-                    deliveryId = dao.insertDelivery(delivery);
-                }
-                return deliveryId;
-            }
+
+        if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
         }
+
+        long deliveryId = dao.getDeliveryId(delivery);
+        if (deliveryId == 0) {
+            delivery.setTier(tier);
+            deliveryId = dao.insertDelivery(delivery);
+            delivery.setId(deliveryId);
+        } else {
+            info("  Got Virus Particle by matching against DB: " + deliveryId);
+
+            delivery.setId(deliveryId);
+            if( dao.updateDeliveryIfNeeded(delivery) ) {
+                info("    Virus Particle data updated in db");
+            }
+        }
+        return deliveryId;
     }
 
     private long loadCommercialReagent(HashMap<String, String> metadata, Delivery delivery) throws Exception {
         if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
             delivery.setId(new BigDecimal(metadata.get("SCGE ID")).longValue());
+            return delivery.getId();
         }
+
+        delivery.setId(0);
         delivery.setSource(metadata.get("Source"));
         delivery.setLabId(metadata.get("Lab Name/ID"));
         delivery.setName(metadata.get("Reagent Name"));
         delivery.setDescription(metadata.get("Reagent Description"));
-        if (delivery.getId() == 0 && (delivery.getLabId() == null || delivery.getLabId().equals("")))
-            return 0;
-        else {
-            if (delivery.getId() == 0) {
-                long deliveryId = dao.getDeliveryId(delivery);
-                if (deliveryId == 0) {
-                    delivery.setTier(tier);
-                    deliveryId = dao.insertDelivery(delivery);
-                }
-                return deliveryId;
-            }
+        if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
         }
+
+        long deliveryId = dao.getDeliveryId(delivery);
+        if (deliveryId == 0) {
+            delivery.setTier(tier);
+            deliveryId = dao.insertDelivery(delivery);
+            delivery.setId(deliveryId);
+        } else {
+            info("  Got Commercial Reagent by matching against DB: " + deliveryId);
+
+            delivery.setId(deliveryId);
+            if( dao.updateDeliveryIfNeeded(delivery) ) {
+                info("    Commercial Reagent data updated in db");
+            }
+        }
+        return deliveryId;
     }
 
     private long loadAmphiphilicPeptide(HashMap<String, String> metadata, Delivery delivery) throws Exception {
         String scgeId = metadata.get("SCGE ID");
         if (!Utils.isStringEmpty(scgeId)) {
             delivery.setId(new BigDecimal(scgeId).longValue());
+            return delivery.getId();
         }
+        delivery.setId(0);
+
         delivery.setSource(metadata.get("Source"));
         delivery.setLabId(metadata.get("Lab Name/ID"));
         delivery.setName(metadata.get("Lab Name/ID"));
         delivery.setDescription(metadata.get("AP Description"));
         delivery.setSequence(metadata.get("AP Sequence"));
 
-        if (delivery.getId() != 0) {
-            return delivery.getId();
-        }
-        if (Utils.isStringEmpty(delivery.getLabId())) {
+        if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
         }
+
         long deliveryId = dao.getDeliveryId(delivery);
         if (deliveryId == 0) {
             delivery.setTier(tier);
             deliveryId = dao.insertDelivery(delivery);
+            delivery.setId(deliveryId);
+        } else {
+            info("  Got AP by matching against DB: " + deliveryId);
+
+            delivery.setId(deliveryId);
+            if( dao.updateDeliveryIfNeeded(delivery) ) {
+                info("    AP data updated in db");
+            }
         }
         return deliveryId;
     }
@@ -817,23 +872,33 @@ public class Manager {
             delivery.setId(new BigDecimal(metadata.get("SCGE ID")).longValue());
             return delivery.getId();
         }
+        delivery.setId(0);
+
         delivery.setSource(metadata.get("Source"));
         delivery.setLabId(metadata.get("Lab Name/ID"));
         delivery.setName(metadata.get("Lab Name/ID"));
         delivery.setDescription(metadata.get("NP Description"));
         delivery.setSubtype(metadata.get("NP Type"));
         delivery.setType("Nanoparticle");
-        if (delivery.getLabId() == null || delivery.getLabId().equals(""))
+        if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
-        else {
-            long deliveryId = dao.getDeliveryId(delivery);
-            if (deliveryId == 0) {
-                delivery.setTier(tier);
-                deliveryId = dao.insertDelivery(delivery);
-                info(" Inserted Nanoparticle: " + deliveryId);
-            } else info(" Got Nanoparticle: " + deliveryId);
-            return deliveryId;
         }
+
+        long deliveryId = dao.getDeliveryId(delivery);
+        if (deliveryId == 0) {
+            delivery.setTier(tier);
+            deliveryId = dao.insertDelivery(delivery);
+            delivery.setId(deliveryId);
+            info(" Inserted Nanoparticle: " + deliveryId);
+        } else {
+            info("  Got Nanoparticle by matching against DB: " + deliveryId);
+
+            delivery.setId(deliveryId);
+            if( dao.updateDeliveryIfNeeded(delivery) ) {
+                info("    nanoparticle data updated in db");
+            }
+        }
+        return deliveryId;
     }
 
     private long loadAnimalModel(HashMap<String, String> metadata, Model model) throws Exception {
