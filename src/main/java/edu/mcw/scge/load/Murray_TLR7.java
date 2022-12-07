@@ -5,6 +5,7 @@ import edu.mcw.scge.Manager;
 import edu.mcw.scge.Mean;
 
 // study loaded on DEV on Nov 22, 2022
+// study loaded on DEV on Nov 28, 2022
 
 public class Murray_TLR7 {
 
@@ -13,7 +14,7 @@ public class Murray_TLR7 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1077;
-        manager.fileName = "data/Murray_TLR7-1077-1.xlsx";
+        manager.fileName = "data/Murray_TLR7-1077-2.xlsx";
         manager.tier = 0;
 
         try {

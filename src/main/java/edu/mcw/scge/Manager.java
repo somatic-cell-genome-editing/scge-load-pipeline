@@ -592,7 +592,16 @@ public class Manager {
         guide.setSpecies(metadata.get("Species"));
         guide.setGrnaLabId(metadata.get("Lab gRNA Name/ID"));
         guide.setGuide(metadata.get("Lab gRNA Name/ID"));
-        guide.setTargetLocus(metadata.get("Target Locus"));
+
+        String targetLocus = metadata.get("Target Locus");
+        if( Utils.isStringEmpty(targetLocus) ) {
+            guide.setTargetLocus(null);
+        } else {
+            //html-encode '<' characters to avoid problems with display in a browser
+            String targetLocus2 = targetLocus.trim().replace("<", "&lt;");
+            guide.setTargetLocus(targetLocus2);
+        }
+
         guide.setTargetSequence(getUpperCase(metadata.get("Target Sequence")));
         guide.setPam(getUpperCase(metadata.get("Target Sequence+PAM")));
         guide.setAssembly(metadata.get("Genome Version"));
