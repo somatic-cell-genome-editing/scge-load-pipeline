@@ -1,6 +1,7 @@
 package edu.mcw.scge.load;
 
 import edu.mcw.scge.Manager;
+import edu.mcw.scge.Mean;
 
 // study loaded in Nov 15, 2022
 public class Saltzman {
@@ -20,7 +21,7 @@ public class Saltzman {
                 String name = "Condition 1"; //exp record name to be loaded, if not present
                 manager.loadMetaData(column, name, false);
             }
-            manager.loadMean(manager.experimentId);
+            Mean.loadMean(manager.experimentId, manager);
         } catch (Exception e) {
             e.printStackTrace();
         }

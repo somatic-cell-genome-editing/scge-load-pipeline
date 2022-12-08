@@ -1107,60 +1107,6 @@ public class Manager {
     }
 
     // obsolete: use Mean class instead
-    @Deprecated
-    public void loadMean(long expId) throws Exception {
-        List<ExperimentRecord> records = dao.getExpRecords(expId);
-        int maxSamples = 0;
-        for (ExperimentRecord record : records) {
-            ExperimentResultDetail resultDetail = new ExperimentResultDetail();
-            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
-            //BigDecimal average = new BigDecimal(0);
-            double average = 0;
-            int noOfSamples = 0;
-            for (ExperimentResultDetail result : experimentResults) {
-                noOfSamples = result.getNumberOfSamples();
-                if (maxSamples < noOfSamples)
-                    maxSamples = noOfSamples;
-
-                if (!result.getUnits().equalsIgnoreCase("signal")) {
-                    if (result.getResult() != null && !result.getResult().equals("")) {
-                        average += Double.valueOf(result.getResult());
-                        //average = average.add(new BigDecimal(result.getResult()));
-                    }
-                }
-                resultDetail = result;
-            }
-            //average = average.divide(new BigDecimal(noOfSamples),2, RoundingMode.HALF_UP);
-            average = average / noOfSamples;
-            average = Math.round(average * 100.0) / 100.0;
-            resultDetail.setReplicate(0);
-            resultDetail.setResult(String.valueOf(average));
-            // System.out.println(resultDetail.getResultId() + "," + resultDetail.getResult());
-            dao.insertExperimentResultDetail(resultDetail);
-
-        }
-        log.debug(studyId + " " + experimentId + " Max = " + maxSamples);
-        for (ExperimentRecord record : records) {
-            ExperimentResultDetail resultDetail = new ExperimentResultDetail();
-            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
-            for (ExperimentResultDetail result : experimentResults) {
-                if (resultDetail.getReplicate() == 0) {
-                    if (maxSamples > result.getNumberOfSamples()) {
-                        //System.out.println(maxSamples - result.getNumberOfSamples());
-                        for (int i = result.getNumberOfSamples() + 1; i <= maxSamples; i++) {
-                            resultDetail.setResultId(result.getResultId());
-                            resultDetail.setReplicate(i);
-                            resultDetail.setResult("NaN");
-                            dao.insertExperimentResultDetail(resultDetail);
-                        }
-                    }
-                }
-            }
-
-        }
-    }
-
-    // obsolete: use Mean class instead
     public void loadQualitativeMean(long expId) throws Exception {
 
         int insertedRows = 0;
