@@ -107,6 +107,11 @@ public class Manager {
     }
 
     public void loadMetaData(int column, String name, boolean qualitativeData) throws Exception {
+        boolean mergeExpRecs = false;
+        loadMetaData(column, name, qualitativeData, mergeExpRecs);
+    }
+
+    public void loadMetaData(int column, String name, boolean qualitativeData, boolean mergeExpRecs) throws Exception {
 
         // reset lists
         vectors.clear();
@@ -378,7 +383,7 @@ public class Manager {
         if (expType.contains("Vitro")) {
             loadDataInVitro(experiment, column, qualitativeData);
         } else {
-            loadDataInVivo(experiment, column, qualitativeData);
+            loadDataInVivo(experiment, column, qualitativeData, mergeExpRecs);
         }
     }
 
@@ -467,7 +472,7 @@ public class Manager {
         }
     }
 
-    public void loadDataInVivo(ExperimentRecord expRec, int column, boolean qualitativeData) throws Exception {
+    public void loadDataInVivo(ExperimentRecord expRec, int column, boolean qualitativeData, boolean mergeExpRecs) throws Exception {
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);
@@ -548,20 +553,38 @@ public class Manager {
                     if (cell2 != null)
                         expRec.setCellType(cell2.getStringCellValue());
                     expRec.setOrganSystemID(cell0.getStringCellValue());
-                    long expRecId = dao.insertExperimentRecord(expRec);
-                    for (long guideId : guides) {
-                        if (guideId != 0)
+
+                    boolean newExpRec = false;
+                    long expRecId;
+                    if( mergeExpRecs ) {
+                        expRecId = dao.getExpRecId(expRec);
+                        if( expRecId==0 ) {
+                            expRecId = dao.insertExperimentRecord(expRec);
+                            log.debug("  new exp rec inserted: "+expRecId);
+                            newExpRec = true;
+                        } else {
+                            log.debug("  old exp rec reused: "+expRecId);
+                        }
+                    } else {
+                        // create a new experiment record *always* for every new section of data
+                        expRecId = dao.insertExperimentRecord(expRec);
+                        log.debug("  new exp rec inserted: "+expRecId);
+                        newExpRec = true;
+                    }
+
+                    if( newExpRec ) {
+                        for (long guideId : guides) {
                             dao.insertGuideAssoc(expRecId, guideId);
-                    }
-                    for (long vectorId : vectors) {
-                        if (vectorId != 0)
+                        }
+                        for (long vectorId : vectors) {
                             dao.insertVectorAssoc(expRecId, vectorId);
-                    }
-                    for (int antibodyId : antibodies) {
-                        if (antibodyId != 0)
+                        }
+                        for (int antibodyId : antibodies) {
                             dao.insertAntibodyAssoc(expRecId, antibodyId);
+                        }
                     }
                     result.setExperimentRecordId(expRecId);
+
                     long resultId = dao.insertExperimentResult(result);
                     String valueString = data;
                     String[] values = valueString.split(",");

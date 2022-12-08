@@ -111,9 +111,11 @@ public class LoadDAO extends AbstractDAO {
     public long insertExperimentRecord(ExperimentRecord experiment) throws Exception{
         return expRecordDao.insertExperimentRecord(experiment);
     }
+
     public long getExpRecId(ExperimentRecord experiment) throws Exception {
         return expRecordDao.getExpRecordId(experiment);
     }
+
     public Person getPersonByEmail(String email) throws Exception{
      return personDao.getPersonByEmail(email).get(0);
     }
@@ -152,15 +154,22 @@ public class LoadDAO extends AbstractDAO {
         resultDao.insertExperimentResultDetail(e);
     }
 
-    public void insertGuideAssoc(long expRecId,long guideId) throws Exception {
-        guideDao.insertGuideAssoc(expRecId,guideId);
+    public void insertGuideAssoc(long expRecId, long guideId) throws Exception {
+        if( expRecId!=0 && guideId!=0 ) {
+            guideDao.insertGuideAssoc(expRecId, guideId);
+        }
     }
 
-    public void insertVectorAssoc(long expRecId,long vectorId) throws Exception {
-        vectorDao.insertVectorAssoc(expRecId,vectorId);
+    public void insertVectorAssoc(long expRecId, long vectorId) throws Exception {
+        if( expRecId!=0 && vectorId!=0 ) {
+            vectorDao.insertVectorAssoc(expRecId, vectorId);
+        }
     }
-    public void insertAntibodyAssoc(long expRecId,int antibodyId) throws Exception {
-        antibodyDao.insertAntibodyAssoc(expRecId,antibodyId);
+
+    public void insertAntibodyAssoc(long expRecId, int antibodyId) throws Exception {
+        if( expRecId!=0 && antibodyId!=0 ) {
+            antibodyDao.insertAntibodyAssoc(expRecId, antibodyId);
+        }
     }
 
     public long insertHrdonor(HRDonor a) throws Exception{

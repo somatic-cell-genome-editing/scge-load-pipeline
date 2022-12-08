@@ -4,7 +4,9 @@ import edu.mcw.scge.datamodel.ExperimentRecord;
 import edu.mcw.scge.datamodel.ExperimentResultDetail;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Mean {
 
@@ -52,6 +54,83 @@ public class Mean {
     }
 
     static void loadNumericMean(List<ExperimentRecord> records, Manager manager) throws Exception {
+
+        LoadDAO dao = manager.getDao();
+        // compute max nr of samples for experiment
+        int maxSamples = 0;
+        for (ExperimentRecord record : records) {
+            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
+            int noOfSamples = 0;
+            for (ExperimentResultDetail result : experimentResults) {
+                noOfSamples = result.getNumberOfSamples();
+                if (maxSamples < noOfSamples)
+                    maxSamples = noOfSamples;
+            }
+        }
+
+        // compute averages for every result_id
+        for (ExperimentRecord record : records) {
+            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
+            Map<Long, List<ExperimentResultDetail>> resultIdMap = new HashMap<>();
+            for (ExperimentResultDetail r: experimentResults) {
+                List<ExperimentResultDetail> list = resultIdMap.get(r.getResultId());
+                if( list==null ) {
+                    list = new ArrayList<>();
+                    resultIdMap.put(r.getResultId(), list);
+                }
+                list.add(r);
+            }
+
+            for( long resultId: resultIdMap.keySet() ) {
+                List<ExperimentResultDetail> list = resultIdMap.get(resultId);
+
+                ExperimentResultDetail resultDetail0 = new ExperimentResultDetail();
+                double average = 0;
+                int noOfSamples = 0;
+
+                for (ExperimentResultDetail result: list) {
+                    noOfSamples = result.getNumberOfSamples();
+
+                    if (!result.getUnits().equalsIgnoreCase("signal")) {
+                        if (result.getResult() != null && !result.getResult().equals("")) {
+                            if( result.getResult().contains("Not measured") ) {
+                                // do nothing -- NaN
+                            } else {
+                                average += Double.valueOf(result.getResult());
+                            }
+                        }
+                    }
+                    resultDetail0 = result;
+                }
+                average = average / noOfSamples;
+                average = Math.round(average * 100.0) / 100.0;
+                resultDetail0.setReplicate(0);
+                resultDetail0.setResult(String.valueOf(average));
+                dao.insertExperimentResultDetail(resultDetail0);
+            }
+        }
+
+        manager.debug("    Max nr of numeric samples = " + maxSamples);
+
+        for (ExperimentRecord record : records) {
+            ExperimentResultDetail resultDetail = new ExperimentResultDetail();
+            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
+            for (ExperimentResultDetail result : experimentResults) {
+                if (resultDetail.getReplicate() == 0) {
+                    if (maxSamples > result.getNumberOfSamples()) {
+                        for (int i = result.getNumberOfSamples() + 1; i <= maxSamples; i++) {
+                            resultDetail.setResultId(result.getResultId());
+                            resultDetail.setReplicate(i);
+                            resultDetail.setResult("NaN");
+                            dao.insertExperimentResultDetail(resultDetail);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    static void loadNumericMeanOld(List<ExperimentRecord> records, Manager manager) throws Exception {
 
         LoadDAO dao = manager.getDao();
         int maxSamples = 0;
