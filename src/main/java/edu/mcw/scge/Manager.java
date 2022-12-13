@@ -38,6 +38,7 @@ public class Manager {
         DS_AMPHIPHILIC_PEPTIDE,
         ANIMAL_MODEL,
         CELL_MODEL,
+        CELL_ANIMAL_MODEL,
         EXPERIMENT_DETAILS,
     }
 
@@ -131,6 +132,8 @@ public class Manager {
         Editor editor = new Editor();
         Delivery delivery = new Delivery();
         Model model = new Model();
+        Model animalModel = new Model();
+        HashMap<String, String> metadataForCellModel = null;
         Vector vector = new Vector();
         ApplicationMethod method = new ApplicationMethod();
         HRDonor hrDonor = new HRDonor();
@@ -221,6 +224,21 @@ public class Manager {
             if (section == SECTION.CELL_MODEL && isEndOfSection) {
                 experiment.setModelId(loadCellModel(metadata, model));
                 metadata.clear();
+            }
+
+            // CELL+ANIMAL_MODEL
+            if (section == SECTION.CELL_MODEL  &&  cell0Data.equalsIgnoreCase("Animal Model source of cells")) {
+                metadataForCellModel = new HashMap<>(metadata);
+                metadata.clear();
+                section = SECTION.CELL_ANIMAL_MODEL;
+            }
+            if (section == SECTION.CELL_ANIMAL_MODEL && isEndOfSection) {
+                long animalModelId = loadAnimalModel(metadata, animalModel);
+                metadataForCellModel.put("Parental Origin", Long.toString(animalModelId));
+                experiment.setModelId(loadCellModel(metadataForCellModel, model));
+
+                metadata.clear();
+                metadataForCellModel = null;
             }
 
             // HR DONOR
@@ -911,6 +929,10 @@ public class Manager {
         delivery.setName(metadata.get("Lab Name/ID"));
         delivery.setDescription(metadata.get("NP Description"));
         delivery.setSubtype(metadata.get("NP Type"));
+        delivery.setNpSize(metadata.get("NP size"));
+        delivery.setNpPolydispersityIndex(metadata.get("NP Polydispersity index"));
+        delivery.setZetaPotential(metadata.get("Zeta Potential"));
+
         delivery.setType("Nanoparticle");
         if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
@@ -947,14 +969,18 @@ public class Manager {
         model.setRrid(metadata.get("RRID link"));
         model.setParentalOrigin(metadata.get("Parental Origin"));
 
-        String val = metadata.get("Strain Symbol"); // old field name
-        if (val == null) val = metadata.get("Official strain symbol");
-        model.setName(val);
-
-        model.setStrainAlias(metadata.get("Strain Aliases"));
-        //(metadata.get("Strain Code"));
         model.setOrganism(metadata.get("Species"));
         model.setSource(metadata.get("Source"));
+        model.setCatalog(metadata.get("Vendor Strain Code"));
+
+        model.setDisplayName(metadata.get("Display Name"));
+        model.setName(metadata.get("Common strain name"));
+
+        String val = metadata.get("Strain Symbol"); // old field name
+        if (val == null) val = metadata.get("Official strain symbol");
+        model.setOfficialName(val);
+
+        model.setStrainAlias(metadata.get("Strain Aliases"));
         model.setDescription(metadata.get("Strain Description"));
         model.setTransgene(metadata.get("Integrated Transgene"));
         model.setAnnotatedMap(metadata.get("Annotated Map"));
@@ -982,9 +1008,12 @@ public class Manager {
         }
         model.setRrid(metadata.get("RRID link"));
         model.setSource(metadata.get("Source"));
+        model.setCatalog(metadata.get("Catalog#"));
         model.setParentalOrigin(metadata.get("Parental Origin"));
         model.setName(metadata.get("CM Name"));
+        model.setDisplayName(metadata.get("CM Name"));
         model.setDescription(metadata.get("CM Description"));
+        model.setOfficialName(metadata.get("Official Name"));
         model.setOrganism(metadata.get("Species"));
         model.setSex(getSex(metadata.get("Sex")));
         model.setSubtype(metadata.get("Type"));
