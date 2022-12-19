@@ -118,7 +118,7 @@ public class Manager {
         vectors.clear();
         guides.clear();
         antibodies.clear();
-
+        offTargets.clear();
 
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
@@ -399,14 +399,14 @@ public class Manager {
         }
 
         if (expType.contains("Vitro")) {
-            loadDataInVitro(experiment, column, qualitativeData);
+            loadDataInVitro(experiment, column, qualitativeData, mergeExpRecs);
         } else {
             loadDataInVivo(experiment, column, qualitativeData, mergeExpRecs);
         }
     }
 
 
-    public void loadDataInVitro(ExperimentRecord experimentRecord, int column, boolean qualitativeData) throws Exception {
+    public void loadDataInVitro(ExperimentRecord experimentRecord, int column, boolean qualitativeData, boolean mergeExpRecs) throws Exception {
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);
@@ -458,21 +458,8 @@ public class Manager {
                         result.setResultType("Editing Efficiency");
                     else result.setResultType("Delivery Efficiency");
 
-                    long expRecId = dao.insertExperimentRecord(experimentRecord);
+                    long expRecId = loadExperimentRecord(experimentRecord, mergeExpRecs);
                     result.setExperimentRecordId(expRecId);
-
-                    for (long guideId : guides) {
-                        dao.insertGuideAssoc(expRecId, guideId);
-                        for (OffTarget o : offTargets) {
-                            o.setGuideId(guideId);
-                            dao.insertOffTarget(o);
-                        }
-                    }
-                    for (long vectorId : vectors)
-                        dao.insertVectorAssoc(expRecId, vectorId);
-
-                    for (int antibodyId : antibodies)
-                        dao.insertAntibodyAssoc(expRecId, antibodyId);
 
                     long resultId = dao.insertExperimentResult(result);
                     String valueString = data;
@@ -572,35 +559,7 @@ public class Manager {
                         expRec.setCellType(cell2.getStringCellValue());
                     expRec.setOrganSystemID(cell0.getStringCellValue());
 
-                    boolean newExpRec = false;
-                    long expRecId;
-                    if( mergeExpRecs ) {
-                        expRecId = dao.getExpRecId(expRec);
-                        if( expRecId==0 ) {
-                            expRecId = dao.insertExperimentRecord(expRec);
-                            log.debug("  new exp rec inserted: "+expRecId);
-                            newExpRec = true;
-                        } else {
-                            log.debug("  old exp rec reused: "+expRecId);
-                        }
-                    } else {
-                        // create a new experiment record *always* for every new section of data
-                        expRecId = dao.insertExperimentRecord(expRec);
-                        log.debug("  new exp rec inserted: "+expRecId);
-                        newExpRec = true;
-                    }
-
-                    if( newExpRec ) {
-                        for (long guideId : guides) {
-                            dao.insertGuideAssoc(expRecId, guideId);
-                        }
-                        for (long vectorId : vectors) {
-                            dao.insertVectorAssoc(expRecId, vectorId);
-                        }
-                        for (int antibodyId : antibodies) {
-                            dao.insertAntibodyAssoc(expRecId, antibodyId);
-                        }
-                    }
+                    long expRecId = loadExperimentRecord(expRec, mergeExpRecs);
                     result.setExperimentRecordId(expRecId);
 
                     long resultId = dao.insertExperimentResult(result);
@@ -616,6 +575,47 @@ public class Manager {
                 }
             }
         }
+    }
+
+    long loadExperimentRecord(ExperimentRecord expRec, boolean mergeExpRecs) throws Exception {
+        boolean newExpRec = false;
+        long expRecId;
+        if( mergeExpRecs ) {
+            expRecId = dao.getExpRecId(expRec);
+            if( expRecId==0 ) {
+                expRecId = dao.insertExperimentRecord(expRec);
+                log.debug("  new exp rec inserted: "+expRecId);
+                newExpRec = true;
+            } else {
+                log.debug("  old exp rec reused: "+expRecId);
+            }
+        } else {
+            // create a new experiment record *always* for every new section of data
+            expRecId = dao.insertExperimentRecord(expRec);
+            log.debug("  new exp rec inserted: "+expRecId);
+            newExpRec = true;
+        }
+
+        if( newExpRec ) {
+            for (long guideId : guides) {
+                dao.insertGuideAssoc(expRecId, guideId);
+
+                for (OffTarget o : offTargets) {
+                    o.setGuideId(guideId);
+                    dao.insertOffTarget(o);
+                }
+            }
+
+            for (long vectorId : vectors) {
+                dao.insertVectorAssoc(expRecId, vectorId);
+            }
+
+            for (int antibodyId : antibodies) {
+                dao.insertAntibodyAssoc(expRecId, antibodyId);
+            }
+        }
+
+        return expRecId;
     }
 
     private void loadGuide(HashMap<String, String> metadata, Guide guide) throws Exception {
@@ -651,7 +651,7 @@ public class Manager {
         guide.setStop(getInttoStringValue(metadata.get("Chromosome End")));
         guide.setStrand(getStrand(metadata.get("Chromosome Strand")));
         guide.setSpacerSequence(getUpperCase(metadata.get("Spacer Sequence")));
-        guide.setSpacerLength(metadata.get("Spacer Length"));
+        guide.setSpacerLength(getInttoStringValue(metadata.get("Spacer Length")));
         guide.setGuideFormat(metadata.get("Guide Format"));
         guide.setSpecificityRatio(getSpecificityRatio(metadata.get("Specificity Ratio")));
         guide.setStandardScaffoldSequence(metadata.get("Standard guide scaffold sequence?"));

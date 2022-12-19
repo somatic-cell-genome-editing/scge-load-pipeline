@@ -5,6 +5,7 @@ import edu.mcw.scge.Mean;
 
 // study loaded on DEV on Nov 16, 2022
 // study loaded on DEV on Nov 22, 2022
+// study loaded on DEV/PROD on Dec 19, 2022
 
 public class Leong {
 
@@ -13,7 +14,7 @@ public class Leong {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1064;
-        manager.fileName = "data/Leong-1064-1.xlsx";
+        manager.fileName = "data/Leong-1064-2.xlsx";
         manager.tier = 0;
         manager.experimentId = 18000000059L;
         manager.expType = "In Vivo";
@@ -27,14 +28,14 @@ public class Leong {
             // 4 columns of numeric data
             for( int column=3; column<=6; column++ ) { // 0-based column in the excel sheet
                 String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name, false);
+                manager.loadMetaData(column, name, false, true);
             }
             manager.info("=== numeric metadata loaded");
 
             // 2 last columns of absent/present data
             for( int column=7; column<=8; column++ ) { // 0-based column in the excel sheet
                 String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name, true);
+                manager.loadMetaData(column, name, true, true);
             }
             manager.info(" === signal metadata loaded");
 
