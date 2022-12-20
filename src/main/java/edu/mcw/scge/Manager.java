@@ -108,7 +108,7 @@ public class Manager {
     }
 
     public void loadMetaData(int column, String name, boolean qualitativeData) throws Exception {
-        boolean mergeExpRecs = false;
+        boolean mergeExpRecs = true;
         loadMetaData(column, name, qualitativeData, mergeExpRecs);
     }
 

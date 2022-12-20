@@ -12,7 +12,7 @@ public class Murray_TLR2 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1068;
-        manager.fileName = "data/Murray_TLR2-1068-1.xlsx";
+        manager.fileName = "data/Murray_TLR2-1068-2.xlsx";
         manager.tier = 0;
 
         try {
