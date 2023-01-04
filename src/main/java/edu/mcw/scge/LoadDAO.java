@@ -1,5 +1,6 @@
 package edu.mcw.scge;
 
+import edu.mcw.scge.dao.spring.StringListQuery;
 import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.dao.*;
 
@@ -153,6 +154,27 @@ public class LoadDAO extends AbstractDAO {
     public void insertExperimentResultDetail(ExperimentResultDetail e) throws Exception {
         resultDao.insertExperimentResultDetail(e);
     }
+
+    public void updateExperimentResultDetail(ExperimentResultDetail e) throws Exception {
+        String sql = "UPDATE experiment_result_detail SET result=? WHERE result_id=? AND replicate=?";
+        resultDao.update(sql, e.getResult(), e.getResultId(), e.getReplicate());
+    }
+
+    public String getResultForExperimentResultDetail(long resultId, int replicate) throws Exception {
+        String sql = "SELECT MAX(result) FROM experiment_result_detail WHERE result_id=? AND replicate=?";
+        List<String> list = StringListQuery.execute(resultDao, sql, resultId, replicate);
+        if( list==null || list.isEmpty() ) {
+            return null;
+        }
+        return list.get(0);
+    }
+
+    public int updateNumberOfSamplesForResult(long resultId, int nrOfSamples) throws Exception {
+
+        String sql = "UPDATE experiment_result SET number_of_samples=? WHERE result_id=? AND number_of_samples<>?";
+        return resultDao.update(sql, nrOfSamples, resultId, nrOfSamples);
+    }
+
 
     public void insertGuideAssoc(long expRecId, long guideId) throws Exception {
         if( expRecId!=0 && guideId!=0 ) {

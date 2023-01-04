@@ -1,5 +1,6 @@
 package edu.mcw.scge;
 
+import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.datamodel.ExperimentRecord;
 import edu.mcw.scge.datamodel.ExperimentResultDetail;
 
@@ -53,16 +54,21 @@ public class Mean {
         }
     }
 
+    ///
     static void loadNumericMean(List<ExperimentRecord> records, Manager manager) throws Exception {
 
         LoadDAO dao = manager.getDao();
+        int rowsWithNrOfSamplesUpdated = 0;
+        int expResultDetailInserted = 0;
+        int expResultDetailUpdated = 0;
+        int expResultDetailUnchanged = 0;
+
         // compute max nr of samples for experiment
         int maxSamples = 0;
         for (ExperimentRecord record : records) {
             List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
-            int noOfSamples = 0;
             for (ExperimentResultDetail result : experimentResults) {
-                noOfSamples = result.getNumberOfSamples();
+                int noOfSamples = result.getNumberOfSamples();
                 if (maxSamples < noOfSamples)
                     maxSamples = noOfSamples;
             }
@@ -84,32 +90,82 @@ public class Mean {
             for( long resultId: resultIdMap.keySet() ) {
                 List<ExperimentResultDetail> list = resultIdMap.get(resultId);
 
-                ExperimentResultDetail resultDetail0 = new ExperimentResultDetail();
+                ExperimentResultDetail resultDetail0 = null;
+                // do we have experiment_result with replicate 0?
+                // if yes, pull it out of the processing list
+                for( int i=0; i<list.size(); i++ ) {
+                    ExperimentResultDetail d = list.get(i);
+                    if( d.getReplicate()==0 ) {
+                        resultDetail0 = d;
+                        list.remove(i);
+                        break;
+                    }
+                }
+                boolean insertResultDetail = resultDetail0==null;
+                if( insertResultDetail ) {
+                    resultDetail0 = new ExperimentResultDetail();
+                    resultDetail0.setResultId(resultId);
+                    resultDetail0.setReplicate(0);
+                }
+
                 double average = 0;
                 int noOfSamples = 0;
 
                 for (ExperimentResultDetail result: list) {
-                    noOfSamples = result.getNumberOfSamples();
 
                     if (!result.getUnits().equalsIgnoreCase("signal")) {
-                        if (result.getResult() != null && !result.getResult().equals("")) {
-                            if( result.getResult().contains("Not measured") ) {
-                                // do nothing -- NaN
-                            } else {
-                                average += Double.valueOf(result.getResult());
-                            }
+                        String val = Utils.NVL(result.getResult(), "");
+                        if( val.isEmpty() || val.contains("Not measured") || val.equals("NaN") ) {
+                            // do nothing -- NaN
+                        } else {
+                            average += Double.valueOf(result.getResult());
+                            noOfSamples++;
                         }
                     }
-                    resultDetail0 = result;
                 }
-                average = average / noOfSamples;
+                if( noOfSamples>0 ) {
+                    average = average / noOfSamples;
+                }
                 average = Math.round(average * 100.0) / 100.0;
-                resultDetail0.setReplicate(0);
-                resultDetail0.setResult(String.valueOf(average));
-                dao.insertExperimentResultDetail(resultDetail0);
+                String averageStr = String.valueOf(average);
+
+                if( resultDetail0.getReplicate()!=0 ) {
+                    System.out.println("unexpected");
+                }
+
+                if( insertResultDetail ) {
+                    resultDetail0.setResult(averageStr);
+                    dao.insertExperimentResultDetail(resultDetail0);
+                    expResultDetailInserted++;
+                } else {
+                    // update value (mean) for replicate 0
+                    String oldValue = resultDetail0.getResult();
+                    boolean valueChanged = !oldValue.equals(averageStr);
+                    if( valueChanged ) {
+                        resultDetail0.setResult(averageStr);
+                        dao.updateExperimentResultDetail(resultDetail0);
+                        expResultDetailUpdated++;
+                    } else {
+                        expResultDetailUnchanged++;
+                    }
+                }
+                int rowsUpdated = dao.updateNumberOfSamplesForResult(resultId, noOfSamples);
+                rowsWithNrOfSamplesUpdated += rowsUpdated;
             }
         }
 
+        if( rowsWithNrOfSamplesUpdated!=0 ) {
+            manager.info("    EXPERIMENT_RESULT rows with NUMBER_OF_SAMPLES updated: " + rowsWithNrOfSamplesUpdated);
+        }
+        if( expResultDetailInserted!=0 ) {
+            manager.info("    EXPERIMENT_RESULT_DETAIL inserted: " + expResultDetailInserted);
+        }
+        if( expResultDetailUpdated!=0 ) {
+            manager.info("    EXPERIMENT_RESULT_DETAIL updated: " + expResultDetailUpdated);
+        }
+        if( expResultDetailUnchanged!=0 ) {
+            manager.info("    EXPERIMENT_RESULT_DETAIL unchanged: " + expResultDetailUnchanged);
+        }
         manager.debug("    Max nr of numeric samples = " + maxSamples);
 
         for (ExperimentRecord record : records) {
@@ -121,8 +177,16 @@ public class Mean {
                         for (int i = result.getNumberOfSamples() + 1; i <= maxSamples; i++) {
                             resultDetail.setResultId(result.getResultId());
                             resultDetail.setReplicate(i);
-                            resultDetail.setResult("NaN");
-                            dao.insertExperimentResultDetail(resultDetail);
+
+                            String valInDb = dao.getResultForExperimentResultDetail(result.getResultId(), i);
+                            if( valInDb==null ) {
+                                resultDetail.setResult("NaN");
+                                dao.insertExperimentResultDetail(resultDetail);
+                            } else {
+                                if( !valInDb.equals("NaN") ) {
+                                    System.out.println("unexpected value in DB");
+                                }
+                            }
                         }
                     }
                 }
@@ -183,47 +247,5 @@ public class Mean {
         }
 
         manager.info("  inserted signal rows with replicate 0: "+insertedRows);
-    }
-
-    static void loadSignalMeanOld(List<ExperimentRecord> records, Manager manager) throws Exception {
-
-        LoadDAO dao = manager.getDao();
-        int insertedRows = 0;
-        for (ExperimentRecord record : records) {
-            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
-
-            long resultId = 0;
-            int anyCount = 0;
-            int presentCount = 0;
-            int notReportedCount = 0;
-
-            for (ExperimentResultDetail result : experimentResults) {
-                if( result.getReplicate()!=0 ) {
-                    if( result.getResult().equals("present") ) {
-                        presentCount++;
-                    }
-                    if( result.getResult().equals("not reported") ) {
-                        notReportedCount++;
-                    }
-                    anyCount++;
-
-                    resultId = result.getResultId();
-                }
-            }
-
-            ExperimentResultDetail resultMean = new ExperimentResultDetail();
-            resultMean.setReplicate(0);
-            resultMean.setResultId(resultId);
-            if( notReportedCount==anyCount ) {
-                resultMean.setResult("not reported");
-            } else {
-                resultMean.setResult(presentCount + " of " + anyCount + " present");
-            }
-
-            dao.insertExperimentResultDetail(resultMean);
-            insertedRows++;
-        }
-
-        //System.out.println("inserted rows with replicate 0: "+insertedRows);
     }
 }

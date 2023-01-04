@@ -21,17 +21,18 @@ public class ChenXuLiu {
 
         try {
 
-            int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId, manager.studyId);
-            manager.info("=== deleted rows for experiment "+manager.experimentId+": "+rowsDeleted);
-            boolean mergeExpRecs = true;
+            if(false) {
+                int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId, manager.studyId);
+                manager.info("=== deleted rows for experiment " + manager.experimentId + ": " + rowsDeleted);
+                boolean mergeExpRecs = true;
 
-            // 5 columns of numeric data
-            for( int column=3; column<3+5; column++ ) { // 0-based column in the excel sheet
-                String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name, false, mergeExpRecs);
+                // 5 columns of numeric data
+                for (int column = 3; column < 3 + 5; column++) { // 0-based column in the excel sheet
+                    String name = "Condition 1"; //exp record name to be loaded, if not present
+                    manager.loadMetaData(column, name, false, mergeExpRecs);
+                }
+                manager.info("=== numeric metadata loaded");
             }
-            manager.info("=== numeric metadata loaded");
-
             Mean.loadMean(manager.experimentId, manager);
 
         } catch (Exception e) {
