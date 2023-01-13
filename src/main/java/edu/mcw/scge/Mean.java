@@ -4,6 +4,9 @@ import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.datamodel.ExperimentRecord;
 import edu.mcw.scge.datamodel.ExperimentResultDetail;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +54,51 @@ public class Mean {
         if( !signalRecords.isEmpty() ) {
             loadSignalMean(signalRecords, manager);
             manager.debug("   signal mean ok");
+        }
+    }
+
+    static public void loadMean(long expId, Manager manager, boolean skipSignalData) throws Exception {
+
+        List<ExperimentRecord> records = manager.getDao().getExpRecords(expId);
+
+
+        List<ExperimentRecord> numericRecords = new ArrayList<>();
+        List<ExperimentRecord> signalRecords = new ArrayList<>();
+
+        // determine which records are numeric, which are signal
+        for (ExperimentRecord record : records) {
+
+            List<ExperimentResultDetail> experimentResults = manager.getDao().getExperimentalResults(record.getExperimentRecordId());
+
+            int noOfSamples = 0;
+            int signalSamples = 0;
+
+            for (ExperimentResultDetail result : experimentResults) {
+                noOfSamples++;
+                if (result.getUnits().equalsIgnoreCase("signal")) {
+                    signalSamples++;
+                }
+            }
+
+            if (noOfSamples == signalSamples) {
+                signalRecords.add(record);
+            } else {
+                numericRecords.add(record);
+            }
+        }
+
+        manager.info("MEAN:  "+numericRecords.size()+" numeric records, "+signalRecords.size()+" signal records");
+
+        if( !numericRecords.isEmpty() ) {
+            loadNumericMean(numericRecords, manager);
+            manager.debug("   numeric mean ok");
+        }
+
+        if( !skipSignalData ) {
+            if (!signalRecords.isEmpty()) {
+                loadSignalMean(signalRecords, manager);
+                manager.debug("   signal mean ok");
+            }
         }
     }
 
@@ -126,11 +174,13 @@ public class Mean {
                 if( noOfSamples>0 ) {
                     average = average / noOfSamples;
                 }
-                average = Math.round(average * 100.0) / 100.0;
-                String averageStr = String.valueOf(average);
+                //1. average = Math.round(average * 100.0) / 100.0;
+                //   String averageStr = String.valueOf(average);
+                //2. String averageStr = String.format("%.2f", average);
+                String averageStr = roundToTwoPlaces(average);
 
                 if( resultDetail0.getReplicate()!=0 ) {
-                    System.out.println("unexpected");
+                    System.out.println("*** MEAN: unexpected");
                 }
 
                 if( insertResultDetail ) {
@@ -247,5 +297,15 @@ public class Mean {
         }
 
         manager.info("  inserted signal rows with replicate 0: "+insertedRows);
+    }
+
+    static NumberFormat formatter = new DecimalFormat("############0.##");
+
+    synchronized public static String roundToTwoPlaces( Double d ) {
+
+        // to ensure proper HALF_UP rounding, i.e. 0.355 -> 0.36
+        // first we round up the number, and then we format it
+        double d2 =  ((long) (d < 0 ? d * 100 - 0.5 : d * 100 + 0.5)) / 100.0;
+        return formatter.format(d2);
     }
 }

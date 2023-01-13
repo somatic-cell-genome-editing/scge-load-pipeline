@@ -171,8 +171,12 @@ public class LoadDAO extends AbstractDAO {
 
     public int updateNumberOfSamplesForResult(long resultId, int nrOfSamples) throws Exception {
 
-        String sql = "UPDATE experiment_result SET number_of_samples=? WHERE result_id=? AND number_of_samples<>?";
-        return resultDao.update(sql, nrOfSamples, resultId, nrOfSamples);
+        int nrOfSamplesInDb = getCount("SELECT number_of_samples FROM experiment_result WHERE result_id=?", resultId);
+        if( nrOfSamplesInDb != nrOfSamples ) {
+            String sql = "UPDATE experiment_result SET number_of_samples=? WHERE result_id=? AND number_of_samples<>?";
+            return resultDao.update(sql, nrOfSamples, resultId, nrOfSamples);
+        }
+        return 0;
     }
 
 
@@ -401,9 +405,8 @@ public class LoadDAO extends AbstractDAO {
     }
 
 
-
-    public List<Study> getStudyById(int studyId) throws Exception {
-        return studyDao.getStudyById(studyId);
+    public List<Experiment> getAllExperiments() throws Exception {
+        return expDao.getAllExperiments();
     }
 
     public Experiment getExperiment(long expId) throws Exception {
