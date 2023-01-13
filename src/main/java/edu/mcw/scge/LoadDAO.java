@@ -444,4 +444,9 @@ public class LoadDAO extends AbstractDAO {
 
         return rowsDeleted;
     }
+
+    public void updateExperimentLastModifiedDate(long expId) throws Exception {
+        String sql = "UPDATE experiment SET last_modified_date=NOW() WHERE experiment_id=?";
+        expDao.update(sql, expId);
+    }
 }

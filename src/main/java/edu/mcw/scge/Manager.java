@@ -1209,7 +1209,9 @@ public class Manager {
         log.debug(studyId + " " + experimentId + " " + msg);
     }
 
-    public void finish() {
+    public void finish() throws Exception {
+        getDao().updateExperimentLastModifiedDate(experimentId);
+
         info("=== OK ===");
         log.info("");
         log.info("");
