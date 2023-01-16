@@ -341,14 +341,49 @@ public class LoadDAO extends AbstractDAO {
 
         update(sql,newId,oldId);
     }
-    public void updateModel(long oldId,long newId) throws Exception{
-        String sql = "update model set model_id = ? where model_id = ?";
 
-        update(sql,newId,oldId);
-        sql = "update experiment_record set model_id = ? where model_id = ?";
+    public boolean updateModelIfNeeded(Model model) throws Exception {
 
-        update(sql,newId,oldId);
+        Model modelInDb = modelDao.getModelById(model.getModelId());
+        if( modelInDb==null ) {
+            return false;
+        }
+
+        boolean isMatching =
+                Utils.stringsAreEqual(model.getType(), modelInDb.getType())
+            && Utils.stringsAreEqual(model.getName(), modelInDb.getName())
+            && Utils.stringsAreEqual(model.getOrganism(), modelInDb.getOrganism())
+            && Utils.stringsAreEqual(model.getSex(), modelInDb.getSex())
+            && Utils.stringsAreEqual(model.getRrid(), modelInDb.getRrid())
+            && Utils.stringsAreEqual(model.getSource(), modelInDb.getSource())
+            && Utils.stringsAreEqual(model.getTransgene(), modelInDb.getTransgene())
+            && Utils.stringsAreEqual(model.getSubtype(), modelInDb.getSubtype())
+            && Utils.stringsAreEqual(model.getAnnotatedMap(), modelInDb.getAnnotatedMap())
+            && Utils.stringsAreEqual(model.getTransgeneDescription(), modelInDb.getTransgeneDescription())
+            && Utils.stringsAreEqual(model.getTransgeneReporter(), modelInDb.getTransgeneReporter())
+            && Utils.stringsAreEqual(model.getParentalOrigin(), modelInDb.getParentalOrigin())
+            && Utils.stringsAreEqual(model.getDescription(), modelInDb.getDescription())
+            && Utils.stringsAreEqual(model.getDisplayName(), modelInDb.getDisplayName())
+            && Utils.stringsAreEqual(model.getStrainAlias(), modelInDb.getStrainAlias())
+            && Utils.stringsAreEqual(model.getCatalog(), modelInDb.getCatalog())
+            && Utils.stringsAreEqual(model.getOntology(), modelInDb.getOntology())
+            && Utils.stringsAreEqual(model.getOfficialName(), modelInDb.getOfficialName())
+            ;
+
+        if( !isMatching ) {
+            // no match
+            if( modelInDb.getTier()==0 ) {
+                modelDao.updateModel(model);
+                return true;
+            }
+
+            // no match, model tier in db >0 -- report a problem
+            Manager.getManagerInstance().info("*** model "+model.getModelId()+" data in db differs from incoming -- model tier in db "+modelInDb.getTier());
+            return false;
+        }
+        return false; // match -- nothing to do
     }
+
     public void updateDelivery(long oldId,long newId) throws Exception{
         String sql = "update delivery_system set ds_id = ? where ds_id = ?";
 

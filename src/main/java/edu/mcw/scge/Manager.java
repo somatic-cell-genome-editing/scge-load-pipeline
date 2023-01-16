@@ -980,24 +980,22 @@ public class Manager {
         if (val == null) val = metadata.get("Official strain symbol");
         model.setOfficialName(val);
 
+        //ensure display name is not null
+        if( Utils.isStringEmpty(model.getDisplayName()) ) {
+            model.setDisplayName(model.getName());
+        }
+        if( Utils.isStringEmpty(model.getDisplayName()) ) {
+            model.setDisplayName(model.getOfficialName());
+        }
+
         model.setStrainAlias(metadata.get("Strain Aliases"));
         model.setDescription(metadata.get("Strain Description"));
         model.setTransgene(metadata.get("Integrated Transgene"));
         model.setAnnotatedMap(metadata.get("Annotated Map"));
         model.setTransgeneDescription(metadata.get("Transgene Description"));
         model.setTransgeneReporter(metadata.get("Transgene Reporter"));
-        model.setType("Animal");
-        if (model.getName() == null || model.getName().equals("")) {
-            return 0;
-        } else {
-            long modelId = dao.getModelId(model);
-            if (modelId == 0) {
-                model.setTier(tier);
-                modelId = dao.insertModel(model);
-                info(" Inserted model: " + modelId);
-            } else info(" Got model: " + modelId);
-            return modelId;
-        }
+
+        return loadModelInDb(model, "Animal");
     }
 
     private long loadCellModel(HashMap<String, String> metadata, Model model) throws Exception {
@@ -1021,19 +1019,31 @@ public class Manager {
         model.setAnnotatedMap(metadata.get("Annotated Map"));
         model.setTransgeneDescription(metadata.get("Transgene Description"));
         model.setTransgeneReporter(metadata.get("Transgene Reporter"));
-        model.setType("Cell");
 
+        return loadModelInDb(model, "Cell");
+    }
+
+    private long loadModelInDb(Model model, String modelType) throws Exception {
+        model.setType(modelType);
         if (model.getName() == null || model.getName().equals("")) {
             return 0;
-        } else {
-            long modelId = dao.getModelId(model);
-            if (modelId == 0) {
-                model.setTier(tier);
-                modelId = dao.insertModel(model);
-                info(" Inserted model: " + modelId);
-            } else info(" Got model: " + modelId);
-            return modelId;
         }
+
+        long modelId = dao.getModelId(model);
+        if (modelId == 0) {
+            model.setTier(tier);
+            modelId = dao.insertModel(model);
+            model.setModelId(modelId);
+            info(" Inserted model: " + modelId);
+        } else {
+            info(" Got model by matching against DB: " + modelId);
+
+            model.setModelId(modelId);
+            if( dao.updateModelIfNeeded(model) ) {
+                info("   model data updated in db");
+            }
+        }
+        return modelId;
     }
 
     private int loadApplicationMethod(HashMap<String, String> metadata, ApplicationMethod method) throws Exception {
