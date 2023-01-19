@@ -3,6 +3,8 @@ package edu.mcw.scge.load;
 import edu.mcw.scge.Manager;
 
 // loaded in Nov 2022
+// reloaded on DEV Jan-19, 2023
+
 public class Lam {
 
     public static void main(String[] args) {
@@ -10,14 +12,14 @@ public class Lam {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1062;
-        manager.fileName = "data/Lam4.xlsx";
+        manager.fileName = "data/Lam-1062-5.xlsx";
         manager.tier = 0;
 
         try {
             String name = "Condition 1"; //exp record name to be loaded, if not present
 
             boolean loadInVivo1 = true;
-            boolean loadInVivo2 = false;
+            boolean loadInVivo2 = true;
             boolean qualitativeData; // if true, it overrides units for experiment data to 'Signal'
 
             // load "In Vivo" sheet

@@ -1,9 +1,11 @@
 package edu.mcw.scge.load;
 
+import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.Manager;
 import edu.mcw.scge.Mean;
 
 // study loaded on DEV on Nov 22, 2022
+// study reloaded on DEV on Jan 19, 2023
 
 public class Murray_TLR2 {
 
@@ -12,7 +14,7 @@ public class Murray_TLR2 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1068;
-        manager.fileName = "data/Murray_TLR2-1068-2.xlsx";
+        manager.fileName = "data/Murray_TLR2-1068-5.xlsx";
         manager.tier = 0;
 
         try {
@@ -67,7 +69,7 @@ public class Murray_TLR2 {
             Mean.loadMean(manager.experimentId, manager);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            Utils.printStackTrace(e, manager.getLog());
         }
 
         manager.finish();

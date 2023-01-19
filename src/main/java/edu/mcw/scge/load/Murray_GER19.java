@@ -6,6 +6,7 @@ import edu.mcw.scge.Mean;
 
 // study loaded on DEV on Nov 28, 2022
 // study loaded on DEV on Dec 13, 2022
+// study loaded on DEV on Jan 19, 2023
 
 public class Murray_GER19 {
 
@@ -14,7 +15,7 @@ public class Murray_GER19 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1080;
-        manager.fileName = "data/Murray_GER19-1080-1.xlsx";
+        manager.fileName = "data/Murray_GER19-1080-2.xlsx";
         manager.tier = 0;
 
         try {

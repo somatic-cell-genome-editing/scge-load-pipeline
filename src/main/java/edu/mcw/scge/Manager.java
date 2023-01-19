@@ -1,6 +1,7 @@
 package edu.mcw.scge;
 
 import edu.mcw.rgd.process.Utils;
+import edu.mcw.scge.dao.spring.StringMapQuery;
 import edu.mcw.scge.datamodel.*;
 import edu.mcw.scge.datamodel.Vector;
 import org.apache.commons.lang3.text.WordUtils;
@@ -40,6 +41,7 @@ public class Manager {
         CELL_MODEL,
         CELL_ANIMAL_MODEL,
         EXPERIMENT_DETAILS,
+        OTHER_EXPERIMENT_DETAILS,
     }
 
     public int studyId = 0;
@@ -107,12 +109,11 @@ public class Manager {
         return data;
     }
 
-    public void loadMetaData(int column, String name, boolean qualitativeData) throws Exception {
-        boolean mergeExpRecs = true;
-        loadMetaData(column, name, qualitativeData, mergeExpRecs);
+    public void loadMetaData(int column, String name, boolean qualitativeData, boolean mergeExpRecs) throws Exception {
+        loadMetaData(column, name, qualitativeData);
     }
 
-    public void loadMetaData(int column, String name, boolean qualitativeData, boolean mergeExpRecs) throws Exception {
+    public void loadMetaData(int column, String name, boolean qualitativeData) throws Exception {
 
         // reset lists
         vectors.clear();
@@ -137,6 +138,7 @@ public class Manager {
         Vector vector = new Vector();
         ApplicationMethod method = new ApplicationMethod();
         HRDonor hrDonor = new HRDonor();
+        Map<String,String> expRecDetails = new HashMap<>();
 
         HashMap<String, String> metadata = new HashMap<>();
         ExperimentRecord experiment = new ExperimentRecord();
@@ -331,6 +333,10 @@ public class Manager {
                 section = SECTION.EXPERIMENT_DETAILS;
             }
 
+            if( cell1Data.equalsIgnoreCase("Other Experiment Details") && cell0Data.isEmpty() ) {
+                section = SECTION.OTHER_EXPERIMENT_DETAILS;
+            }
+
             if (traData ||
                     (cell0 != null && cell0.getStringCellValue().equalsIgnoreCase("Transient Reporter Assay"))) {
                 traData = true;
@@ -396,17 +402,26 @@ public class Manager {
                     antibodyData = false;
                 }
             }
+
+            if( section == SECTION.OTHER_EXPERIMENT_DETAILS ) {
+                String detailName = cell1Data.trim();
+                String detailValue = data.trim();
+                if( !Utils.isStringEmpty(detailName) && !Utils.isStringEmpty(detailValue) ) {
+                    expRecDetails.put(detailName, detailValue);
+                }
+            }
         }
 
         if (expType.contains("Vitro")) {
-            loadDataInVitro(experiment, column, qualitativeData, mergeExpRecs);
+            loadDataInVitro(experiment, column, qualitativeData, expRecDetails);
         } else {
-            loadDataInVivo(experiment, column, qualitativeData, mergeExpRecs);
+            loadDataInVivo(experiment, column, qualitativeData, expRecDetails);
         }
     }
 
 
-    public void loadDataInVitro(ExperimentRecord experimentRecord, int column, boolean qualitativeData, boolean mergeExpRecs) throws Exception {
+    public void loadDataInVitro(ExperimentRecord experimentRecord, int column, boolean qualitativeData, Map<String,String> expRecDetails) throws Exception {
+        boolean mergeExpRecs = true;
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);
@@ -460,6 +475,7 @@ public class Manager {
 
                     long expRecId = loadExperimentRecord(experimentRecord, mergeExpRecs);
                     result.setExperimentRecordId(expRecId);
+                    loadExperimentRecordDetails(expRecId, expRecDetails);
 
                     long resultId = dao.insertExperimentResult(result);
                     String valueString = data;
@@ -477,7 +493,8 @@ public class Manager {
         }
     }
 
-    public void loadDataInVivo(ExperimentRecord expRec, int column, boolean qualitativeData, boolean mergeExpRecs) throws Exception {
+    public void loadDataInVivo(ExperimentRecord expRec, int column, boolean qualitativeData, Map<String,String> expRecDetails) throws Exception {
+        boolean mergeExpRecs = true;
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         XSSFSheet sheet = wb.getSheet(expType);
@@ -561,6 +578,7 @@ public class Manager {
 
                     long expRecId = loadExperimentRecord(expRec, mergeExpRecs);
                     result.setExperimentRecordId(expRecId);
+                    loadExperimentRecordDetails(expRecId, expRecDetails);
 
                     long resultId = dao.insertExperimentResult(result);
                     String valueString = data;
@@ -1225,6 +1243,70 @@ public class Manager {
         info("=== OK ===");
         log.info("");
         log.info("");
+    }
+
+    void loadExperimentRecordDetails(long expRecId, Map<String,String> expDetails) throws Exception {
+
+        int inserted = 0;
+        int updated = 0;
+        int deleted = 0;
+        int upToDate = 0;
+
+        Map<String,String> detailsInDb = getDao().getExperimentRecordDetails(expRecId);
+
+        Set<String> namesInDb = new HashSet<>(detailsInDb.keySet());
+        Set<String> namesIncoming = expDetails.keySet();
+
+        // determine details to be updated
+        for( String name: namesIncoming ) {
+            namesInDb.remove(name);
+
+            String valueIncoming = expDetails.get(name);
+            // if it is a number ending with ".0", then remove ".0"
+            try {
+                Double.parseDouble(valueIncoming);
+                if( valueIncoming.endsWith(".0") ) {
+                    valueIncoming = valueIncoming.substring(0, valueIncoming.length()-2);
+                }
+            } catch( NumberFormatException ignore) {}
+
+
+            String valueInDb = detailsInDb.get(name);
+            if( valueInDb==null ) {
+                getDao().insertExperimentRecordDetails(expRecId, name, valueIncoming);
+                inserted++;
+            } else {
+                if( valueIncoming.equals(valueInDb) ) {
+                    upToDate++;
+                } else {
+                    getDao().updateExperimentRecordDetails(expRecId, name, valueIncoming);
+                    updated++;
+                }
+            }
+        }
+
+        // whatever is left in namesInDb hashset, is to be deleted
+        for( String name: namesInDb ) {
+            getDao().deleteExperimentRecordDetails(expRecId, name);
+        }
+
+        if( inserted+deleted+updated+upToDate>0 ) {
+            String msg = "  experiment details: ";
+            if( inserted>0 ) {
+                msg += "  INSERTED="+inserted;
+            }
+            if( deleted>0 ) {
+                msg += "  DELETED="+deleted;
+            }
+            if( updated>0 ) {
+                msg += "  UPDATED="+updated;
+            }
+            if( upToDate>0 ) {
+                msg += "  UP_TO_DATE="+upToDate;
+            }
+
+            info(msg);
+        }
     }
 
     public LoadDAO getDao() {

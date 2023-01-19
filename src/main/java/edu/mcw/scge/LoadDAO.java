@@ -8,6 +8,7 @@ import edu.mcw.scge.dao.implementation.*;
 import edu.mcw.scge.datamodel.*;
 
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -474,6 +475,9 @@ public class LoadDAO extends AbstractDAO {
         sql = "delete from antibody_associations where experiment_record_id in (select experiment_record_id from experiment_record where experiment_id = ?)";
         rowsDeleted += expDao.update(sql, expId);
 
+        sql = "delete from experiment_details where experiment_record_id in (select experiment_record_id from experiment_record where experiment_id = ?)";
+        rowsDeleted += expDao.update(sql, expId);
+
         sql = "delete from experiment_record where experiment_id = ?";
         rowsDeleted += expDao.update(sql, expId);
 
@@ -483,5 +487,23 @@ public class LoadDAO extends AbstractDAO {
     public void updateExperimentLastModifiedDate(long expId) throws Exception {
         String sql = "UPDATE experiment SET last_modified_date=NOW() WHERE experiment_id=?";
         expDao.update(sql, expId);
+    }
+
+
+
+    public Map<String,String> getExperimentRecordDetails(long expRecId) throws Exception {
+        return expRecordDao.getExperimentRecordDetails(expRecId);
+    }
+
+    public void insertExperimentRecordDetails(long expRecId, String name, String value) throws Exception {
+        expRecordDao.insertExperimentRecordDetails(expRecId, name, value);
+    }
+
+    public void updateExperimentRecordDetails(long expRecId, String name, String value) throws Exception {
+        expRecordDao.updateExperimentRecordDetails(expRecId, name, value);
+    }
+
+    public void deleteExperimentRecordDetails(long expRecId, String name) throws Exception {
+        expRecordDao.deleteExperimentRecordDetails(expRecId, name);
     }
 }
