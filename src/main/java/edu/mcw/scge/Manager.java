@@ -124,6 +124,7 @@ public class Manager {
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
         //String s1 = wb.getSheetName(1);
+        //debug("worksheet nr 1 name: "+s1);
         XSSFSheet sheet = wb.getSheet(expType);      //creating a Sheet object to retrieve object
 
         SECTION section = SECTION.NONE;
@@ -1307,6 +1308,30 @@ public class Manager {
 
             info(msg);
         }
+    }
+
+    public void loadExperimentNumericData(long expId, String worksheet, int dataCols) throws Exception {
+        loadExperimentData(expId, worksheet, dataCols, true);
+    }
+
+    public void loadExperimentSignalData(long expId, String worksheet, int dataCols) throws Exception {
+        loadExperimentData(expId, worksheet, dataCols, false);
+    }
+
+    public void loadExperimentData(long expId, String worksheet, int dataCols, boolean numericData) throws Exception {
+
+        experimentId = expId;
+        expType = worksheet;
+
+        int rowsDeleted = getDao().deleteExperimentData(experimentId, studyId);
+        info("=== deleted rows for experiment " + experimentId + ": " + rowsDeleted);
+
+        // columns of numeric data
+        for (int column = 3; column < 3 + dataCols; column++) { // 0-based column in the excel sheet
+            String name = "Condition 1"; //exp record name to be loaded, if not present
+            loadMetaData(column, name, !numericData);
+        }
+        Mean.loadMean(experimentId, this);
     }
 
     public LoadDAO getDao() {
