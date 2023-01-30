@@ -2,11 +2,11 @@ package edu.mcw.scge.load;
 
 import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.Manager;
-import edu.mcw.scge.Mean;
 
-// study loaded on DEV on Nov 28, 2022
-// study loaded on DEV on Dec 13, 2022
-// study loaded on DEV on Jan 19, 2023
+// loaded on DEV on Nov 28, 2022
+// loaded on DEV on Dec 13, 2022
+// loaded on DEV on Jan 19, 2023
+// loaded on PROD on Jan 30, 2023
 
 public class Murray_GER14 {
 
@@ -19,26 +19,11 @@ public class Murray_GER14 {
         manager.tier = 0;
 
         try {
-            manager.experimentId = 18000000075L;
-            manager.expType = "In Vitro";
-            manager.info("LOAD FROM FILE "+manager.fileName+" "+manager.expType);
+            manager.loadExperimentNumericData(18000000075L, "In Vitro", 4);
 
-            int rowsDeleted = manager.getDao().deleteExperimentData(manager.experimentId, manager.studyId);
-            manager.info("=== deleted rows : "+rowsDeleted);
-
-            // 4 columns of numeric data
-            for( int column=3; column<3+4; column++ ) { // 0-based column in the excel sheet
-                String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name, false, true);
-            }
-            manager.info("=== numeric metadata loaded");
-
-            Mean.loadMean(manager.experimentId, manager);
-
+            manager.finish();
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());
         }
-
-        manager.finish();
     }
 }

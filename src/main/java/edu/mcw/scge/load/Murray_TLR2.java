@@ -18,9 +18,9 @@ public class Murray_TLR2 {
         manager.tier = 0;
 
         try {
-            manager.loadExperimentNumericData(18000000070L, "In Vitro", 6);
+            //manager.loadExperimentNumericData(18000000070L, "In Vitro", 6);
             manager.loadExperimentNumericData(18000000071L, "In Vitro (2)", 3);
-            manager.loadExperimentNumericData(18000000072L, "In Vitro (3)", 3);
+            //manager.loadExperimentNumericData(18000000072L, "In Vitro (3)", 3);
 
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());
