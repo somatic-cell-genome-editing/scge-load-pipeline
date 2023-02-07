@@ -61,9 +61,7 @@ public class LoadDAO extends AbstractDAO {
     public long getGuideId(Guide guide) throws Exception {
         return guideDao.getGuideId(guide);
     }
-    public List<Guide> getAllGuides() throws Exception {
-        return guideDao.getGuides();
-    }
+
     public long getEditorId(Editor editor) throws Exception {
         return editorDao.getEditorId(editor);
     }
@@ -315,32 +313,15 @@ public class LoadDAO extends AbstractDAO {
             return false; // match -- nothing to do
         }
     }
-    public void updateGuideAssoc(long oldId,long newId) throws Exception{
-        String sql = "update guide_associations set guide_id = ? where guide_id = ?";
 
-        update(sql,newId,oldId);
-
-        sql = "update off_target set guide_id = ? where guide_id = ?";
-
-        update(sql,newId,oldId);
-    }
-    public void updateVector(long oldId,long newId) throws Exception{
-        String sql = "update vector set vector_id = ? where vector_id = ?";
-
-        update(sql,newId,oldId);
-    }
-    public void updateVectorAssoc(long oldId,long newId) throws Exception{
-        String sql = "update vector_associations set vector_id = ? where vector_id = ?";
-
-        update(sql,newId,oldId);
-    }
-    public void updateEditor(long oldId,long newId) throws Exception{
-        String sql = "update editor set editor_id = ? where editor_id = ?";
-
-        update(sql,newId,oldId);
-        sql = "update experiment_record set editor_id = ? where editor_id = ?";
-
-        update(sql,newId,oldId);
+    public boolean createExperimentIfMissing(int studyId, long experimentId, String expType) throws Exception {
+        Experiment exp = expDao.getExperimentByStudyIdNExperimentId(studyId, experimentId);
+        if( exp==null ) {
+            String sql = "insert into experiment (study_id,experiment_id,name,type,description) values (?,?,?,?,?)";
+            expDao.update(sql, studyId, experimentId, "", expType, "");
+            return true;
+        }
+        return false;
     }
 
     public boolean updateModelIfNeeded(Model model) throws Exception {

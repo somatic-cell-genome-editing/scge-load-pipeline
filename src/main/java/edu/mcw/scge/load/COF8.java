@@ -20,10 +20,8 @@ public class COF8 {
         manager.tier = 0;
 
         try {
-
             manager.loadExperimentNumericData(18000000065L, "In Vivo - Fig1-3 ", 5);
 
-            manager.finish();
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());
         }

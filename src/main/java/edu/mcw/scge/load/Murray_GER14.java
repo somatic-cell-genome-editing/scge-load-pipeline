@@ -21,7 +21,6 @@ public class Murray_GER14 {
         try {
             manager.loadExperimentNumericData(18000000075L, "In Vitro", 4);
 
-            manager.finish();
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());
         }

@@ -25,7 +25,5 @@ public class Murray_TLR2 {
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());
         }
-
-        manager.finish();
     }
 }

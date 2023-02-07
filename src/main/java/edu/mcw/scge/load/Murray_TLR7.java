@@ -20,10 +20,9 @@ public class Murray_TLR7 {
 
         try {
             manager.loadExperimentNumericData(18000000074L, "In Vitro", 2);
+
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());
         }
-
-        manager.finish();
     }
 }

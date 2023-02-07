@@ -469,7 +469,7 @@ public class Manager {
                     cell1.getStringCellValue().equalsIgnoreCase("Delivery Efficiency")) {
                 // todo: throw new Exception("add processing of sections 'Biomarker Detection’ and ‘Other Measurement’ in addition to 'Editing Efficency' and 'Delivery Efficiency'");
 
-                if (data != null && !data.equals("")) {
+                if (data != null && !data.equals("") && !data.equals("N/A")) {
                     if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency"))
                         result.setResultType("Editing Efficiency");
                     else result.setResultType("Delivery Efficiency");
@@ -479,18 +479,9 @@ public class Manager {
                     loadExperimentRecordDetails(expRecId, expRecDetails);
 
                     long resultId = dao.insertExperimentResult(result);
-                    String valueString = data;
-                    String[] values = valueString.split(",");
-                    for (int i = 0; i < values.length; i++) {
-                        ExperimentResultDetail detail = new ExperimentResultDetail();
-                        detail.setResultId(resultId);
-                        detail.setReplicate(i + 1);
-                        detail.setResult(values[i].trim().toLowerCase());
-                        dao.insertExperimentResultDetail(detail);
-                    }
+                    loadDataSeries(data, resultId);
                 }
             }
-
         }
     }
 
@@ -582,17 +573,25 @@ public class Manager {
                     loadExperimentRecordDetails(expRecId, expRecDetails);
 
                     long resultId = dao.insertExperimentResult(result);
-                    String valueString = data;
-                    String[] values = valueString.split(",");
-                    for (int i = 0; i < values.length; i++) {
-                        ExperimentResultDetail detail = new ExperimentResultDetail();
-                        detail.setResultId(resultId);
-                        detail.setReplicate(i + 1);
-                        detail.setResult(values[i].trim());
-                        dao.insertExperimentResultDetail(detail);
-                    }
+                    loadDataSeries(data, resultId);
                 }
             }
+        }
+    }
+
+    void loadDataSeries(String data, long resultId) throws Exception {
+        String valueString = data;
+        String[] values = valueString.split(",");
+        for (int i = 0; i < values.length; i++) {
+            String val = values[i].trim().toLowerCase();
+            if( val.isEmpty() || val.equals("n/a") ) {
+                continue;
+            }
+            ExperimentResultDetail detail = new ExperimentResultDetail();
+            detail.setResultId(resultId);
+            detail.setReplicate(i + 1);
+            detail.setResult(val);
+            dao.insertExperimentResultDetail(detail);
         }
     }
 
@@ -1323,8 +1322,14 @@ public class Manager {
         experimentId = expId;
         expType = worksheet;
 
-        int rowsDeleted = getDao().deleteExperimentData(experimentId, studyId);
-        info("=== deleted rows for experiment " + experimentId + ": " + rowsDeleted);
+        String expType2 = expType.contains("Vivo") ? "In Vivo" : "In Vitro";
+        boolean newExperimentCreated = getDao().createExperimentIfMissing(studyId, experimentId, expType2);
+        if( newExperimentCreated ) {
+            info("=== new experiment created");
+        } else {
+            int rowsDeleted = getDao().deleteExperimentData(experimentId, studyId);
+            info("=== deleted rows for experiment " + experimentId + ": " + rowsDeleted);
+        }
 
         // columns of numeric data
         for (int column = 3; column < 3 + dataCols; column++) { // 0-based column in the excel sheet
@@ -1332,6 +1337,8 @@ public class Manager {
             loadMetaData(column, name, !numericData);
         }
         Mean.loadMean(experimentId, this);
+
+        finish();
     }
 
     public LoadDAO getDao() {
