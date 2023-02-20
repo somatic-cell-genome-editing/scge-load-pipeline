@@ -4,6 +4,7 @@ import edu.mcw.scge.Manager;
 
 // loaded in Nov 2022
 // reloaded on DEV Jan-19, 2023
+// reloaded on DEV/STAGE Feb 09, 2023
 
 public class Lam {
 
@@ -12,7 +13,7 @@ public class Lam {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1062;
-        manager.fileName = "data/Lam-1062-5.xlsx";
+        manager.fileName = "data/Lam-1062-6.xlsx";
         manager.tier = 0;
 
         try {
@@ -24,6 +25,9 @@ public class Lam {
 
             // load "In Vivo" sheet
             if(loadInVivo1) {
+
+                manager.loadExperimentSignalData(18000000056L, "In Vivo", 2);
+
                 manager.experimentId = 18000000056L;
                 manager.expType = "In Vivo";
 

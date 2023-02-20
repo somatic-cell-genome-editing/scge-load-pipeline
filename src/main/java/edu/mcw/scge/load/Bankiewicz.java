@@ -1,9 +1,11 @@
 package edu.mcw.scge.load;
 
+import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.Manager;
-import edu.mcw.scge.Mean;
 
-// study loaded in Nov 08, 2022
+// study loaded on Nov 08, 2022
+// reloaded on DEV/STAGE on Feb 07, 2023
+
 public class Bankiewicz {
 
     public static void main(String[] args) {
@@ -11,19 +13,14 @@ public class Bankiewicz {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1066;
-        manager.experimentId = 18000000060L;
-        manager.fileName = "data/Bankiewicz4.xlsx";
-        manager.expType = "In Vivo";
+        manager.fileName = "data/Bankiewicz-1066-5.xlsx";
         manager.tier = 0;
 
         try {
-            for( int column=3; column<=6; column++ ) { // 0-based column in the excel sheet
-                String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name, false);
-            }
-            Mean.loadMean(manager.experimentId, manager);
+            manager.loadExperimentNumericData(18000000060L, "In Vivo", 3);
+
         } catch (Exception e) {
-            e.printStackTrace();
+            Utils.printStackTrace(e, manager.getLog());
         }
     }
 }

@@ -317,7 +317,7 @@ public class LoadDAO extends AbstractDAO {
     public boolean createExperimentIfMissing(int studyId, long experimentId, String expType) throws Exception {
         Experiment exp = expDao.getExperimentByStudyIdNExperimentId(studyId, experimentId);
         if( exp==null ) {
-            String sql = "insert into experiment (study_id,experiment_id,name,type,description) values (?,?,?,?,?)";
+            String sql = "insert into experiment (study_id,experiment_id,name,type,description,created_date) values (?,?,?,?,?,current_timestamp)";
             expDao.update(sql, studyId, experimentId, "", expType, "");
             return true;
         }

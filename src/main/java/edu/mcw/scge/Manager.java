@@ -1,7 +1,6 @@
 package edu.mcw.scge;
 
 import edu.mcw.rgd.process.Utils;
-import edu.mcw.scge.dao.spring.StringMapQuery;
 import edu.mcw.scge.datamodel.*;
 import edu.mcw.scge.datamodel.Vector;
 import org.apache.commons.lang3.text.WordUtils;
@@ -101,7 +100,7 @@ public class Manager {
 
         if (data != null) {
             // replace nonbreakable space (&nbsp;) with regular space and then trim
-            String newData = data.replace("\u00A0", "").trim();
+            String newData = data.replace("\u00A0", " ").trim();
             if (newData.length() != data.length()) {
                 data = newData;
             }
@@ -991,7 +990,6 @@ public class Manager {
         model.setSource(metadata.get("Source"));
         model.setCatalog(metadata.get("Vendor Strain Code"));
 
-        model.setDisplayName(metadata.get("Display Name"));
         model.setName(metadata.get("Common strain name"));
 
         String val = metadata.get("Strain Symbol"); // old field name
@@ -999,6 +997,7 @@ public class Manager {
         model.setOfficialName(val);
 
         //ensure display name is not null
+        model.setDisplayName(metadata.get("Display Name"));
         if( Utils.isStringEmpty(model.getDisplayName()) ) {
             model.setDisplayName(model.getName());
         }
@@ -1058,7 +1057,7 @@ public class Manager {
 
             model.setModelId(modelId);
             if( dao.updateModelIfNeeded(model) ) {
-                info("   model data updated in db");
+                info("   ### model data updated in db");
             }
         }
         return modelId;
@@ -1339,6 +1338,13 @@ public class Manager {
         Mean.loadMean(experimentId, this);
 
         finish();
+    }
+
+    String getTrimmedString(String s) {
+        if( s==null ) {
+            return null;
+        }
+        return s.trim();
     }
 
     public LoadDAO getDao() {
