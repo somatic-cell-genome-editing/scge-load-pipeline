@@ -734,6 +734,7 @@ public class Manager {
             info("Got editor: " + editor.getId());
             return editor.getId();
         }
+
         editor.setSource(metadata.get("Source"));
         //editor.setSymbol(metadata.get("Catalog#"));
         editor.setSpecies(metadata.get("Editor Species"));
@@ -758,9 +759,12 @@ public class Manager {
         editor.setStop(getInttoStringValue(metadata.get("Chromosome End")));
         editor.setStrand(getStrand(metadata.get("Chromosome Strand")));
 
-        if (editor.getSymbol() == null || editor.getSymbol().equals(""))
+        if (editor.getSymbol() == null || editor.getSymbol().equals("")) {
             return 0;
-        else {
+        } else {
+            if( editor.getSymbol().contains("Alt-R")) {
+                System.out.println("aaa");
+            }
             long editorId = dao.getEditorId(editor);
             if (editorId == 0) {
                 editor.setTier(tier);
@@ -768,7 +772,13 @@ public class Manager {
                 editor.setId(editorId);
                 dao.insertEditorGenomeInfo(editor);
                 info("Inserted editor: " + editorId);
-            } else info("Got editor: " + editorId);
+            } else {
+                editor.setId(editorId);
+                info("Got editor by matching against DB: " + editorId);
+                if( dao.updateEditorIfNeeded(editor) ) {
+                    info("    #### editor updated in db");
+                }
+            }
             return editorId;
         }
     }

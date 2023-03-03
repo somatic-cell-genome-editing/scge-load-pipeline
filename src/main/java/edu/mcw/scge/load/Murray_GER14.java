@@ -15,7 +15,7 @@ public class Murray_GER14 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1078;
-        manager.fileName = "data/Murray_GER14-1078-2.xlsx";
+        manager.fileName = "data/Murray_GER14-1078-3.xlsx";
         manager.tier = 0;
 
         try {

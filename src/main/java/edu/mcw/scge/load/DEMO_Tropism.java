@@ -12,7 +12,7 @@ public class DEMO_Tropism {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1002;
-        manager.fileName = "data/DEMO_tropism-1002-2.xlsx";
+        manager.fileName = "data/DEMO_tropism-1002-3.xlsx";
         manager.tier = 0;
 
         try {

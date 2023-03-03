@@ -1,5 +1,6 @@
 package edu.mcw.scge;
 
+import edu.mcw.scge.dao.spring.IntListQuery;
 import edu.mcw.scge.dao.spring.StringListQuery;
 import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.dao.*;
@@ -41,6 +42,75 @@ public class LoadDAO extends AbstractDAO {
     public long insertEditor(Editor editor) throws Exception{
         return editorDao.insertEditor(editor);
     }
+
+    public boolean updateEditorIfNeeded(Editor ed) throws Exception {
+
+        List<Editor> list = editorDao.getEditorById(ed.getId());
+        if( list==null && list.isEmpty() ) {
+            return false;
+        }
+        Editor edInDb = list.get(0);
+
+        boolean isMatching =
+            Utils.stringsAreEqual(ed.getType(), edInDb.getType())
+                && Utils.stringsAreEqual(ed.getSubType(), edInDb.getSubType())
+                && Utils.stringsAreEqual(ed.getSymbol(), edInDb.getSymbol())
+                && Utils.stringsAreEqual(ed.getAlias(), edInDb.getAlias())
+                && Utils.stringsAreEqual(ed.getSpecies(), edInDb.getSpecies())
+                && Utils.stringsAreEqual(ed.getEditorVariant(), edInDb.getEditorVariant())
+                && Utils.stringsAreEqual(ed.getPamPreference(), edInDb.getPamPreference())
+                && Utils.stringsAreEqual(ed.getSubstrateTarget(), edInDb.getSubstrateTarget())
+                && Utils.stringsAreEqual(ed.getActivity(), edInDb.getActivity())
+                && Utils.stringsAreEqual(ed.getFusion(), edInDb.getFusion())
+                && Utils.stringsAreEqual(ed.getDsbCleavageType(), edInDb.getDsbCleavageType())
+                && Utils.stringsAreEqual(ed.getTarget_sequence(), edInDb.getTarget_sequence())
+                && Utils.stringsAreEqual(ed.getSource(), edInDb.getSource())
+                && Utils.stringsAreEqual(ed.getProteinSequence(), edInDb.getProteinSequence())
+                && Utils.stringsAreEqual(ed.getEditorDescription(), edInDb.getEditorDescription())
+                && Utils.stringsAreEqual(ed.getAnnotatedMap(), edInDb.getAnnotatedMap())
+                && Utils.stringsAreEqual(ed.getOrientation(), edInDb.getOrientation())
+                && Utils.stringsAreEqual(ed.getCatalog(), edInDb.getCatalog())
+                && Utils.stringsAreEqual(ed.getRrid(), edInDb.getRrid());
+
+        boolean wasUpdated = false;
+        if( !isMatching ) {
+            // no match
+            if( edInDb.getTier()==0 ) {
+                editorDao.updateEditor(ed);
+                wasUpdated = true;
+            } else {
+                // no match, editor tier in db >0 -- report a problem
+                Manager.getManagerInstance().info("*** editor " + ed.getId() + " data in db differs from incoming -- editor tier in db " + edInDb.getTier());
+                return false;
+            }
+        }
+
+        // guide data matches -- check genome info data
+        boolean isMatching2 =
+            Utils.stringsAreEqual(ed.getTargetLocus(), edInDb.getTargetLocus()) &&
+            Utils.stringsAreEqual(ed.getTarget_sequence(), edInDb.getTarget_sequence()) &&
+            Utils.stringsAreEqual(ed.getAssembly(), edInDb.getAssembly()) &&
+            Utils.stringsAreEqual(ed.getChr(), edInDb.getChr()) &&
+            Utils.stringsAreEqual(ed.getStart(), edInDb.getStart()) &&
+            Utils.stringsAreEqual(ed.getStop(), edInDb.getStop()) &&
+            Utils.stringsAreEqual(ed.getStrand(), edInDb.getStrand()) &&
+            Utils.stringsAreEqual(ed.getSpecies(), edInDb.getSpecies());
+
+        if( !isMatching2 ) {
+            // no match
+            if( edInDb.getTier()==0 ) {
+                editorDao.updateGenomeInfo(ed);
+                wasUpdated = true;
+            } else {
+                // no match, editor tier in db >0 -- report a problem
+                Manager.getManagerInstance().info("*** editor " + ed.getId() + " data in db differs from incoming -- editor tier in db " + edInDb.getTier());
+                return false;
+            }
+        }
+
+        return wasUpdated;
+    }
+
     public void insertEditorGenomeInfo(Editor editor) throws Exception{
         editorDao.insertGenomeInfo(editor);
     }
@@ -276,21 +346,22 @@ public class LoadDAO extends AbstractDAO {
                 && Utils.stringsAreEqual(guide.getFullGuide(), guideInDb.getFullGuide())
                 && Utils.stringsAreEqual(guide.getGuideCompatibility(), guideInDb.getGuideCompatibility());
 
+        boolean wasUpdated = false;
         if( !isMatching ) {
             // no match
             if( guideInDb.getTier()==0 ) {
                 guideDao.updateGuide(guide);
-                return true;
+                wasUpdated = true;
+            } else {
+                // no match, guide tier in db >0 -- report a problem
+                Manager.getManagerInstance().info("*** guide " + guide.getGuide_id() + " data in db differs from incoming -- guide tier in db " + guideInDb.getTier());
+                return false;
             }
-
-            // no match, guide tier in db >0 -- report a problem
-            Manager.getManagerInstance().info("*** guide "+guide.getGuide_id()+" data in db differs from incoming -- guide tier in db "+guideInDb.getTier());
-            return false;
         }
 
         // guide data matches -- check genome info data
-        isMatching =
-                Utils.stringsAreEqual(guide.getTargetLocus(), guideInDb.getTargetLocus()) &&
+        boolean isMatching2 =
+            Utils.stringsAreEqual(guide.getTargetLocus(), guideInDb.getTargetLocus()) &&
             Utils.stringsAreEqual(guide.getTargetSequence(), guideInDb.getTargetSequence()) &&
             Utils.stringsAreEqual(guide.getAssembly(), guideInDb.getAssembly()) &&
             Utils.stringsAreEqual(guide.getChr(), guideInDb.getChr()) &&
@@ -299,19 +370,19 @@ public class LoadDAO extends AbstractDAO {
             Utils.stringsAreEqual(guide.getStrand(), guideInDb.getStrand()) &&
             Utils.stringsAreEqual(guide.getSpecies(), guideInDb.getSpecies());
 
-        if( !isMatching ) {
+        if( !isMatching2 ) {
             // no match
             if( guideInDb.getTier()==0 ) {
                 guideDao.updateGenomeInfo(guide);
-                return true;
+                wasUpdated = true;
+            } else {
+                // no match, guide tier in db >0 -- report a problem
+                Manager.getManagerInstance().info("*** guide " + guide.getGuide_id() + " data in db differs from incoming -- guide tier in db " + guideInDb.getTier());
+                return false;
             }
-
-            // no match, guide tier in db >0 -- report a problem
-            Manager.getManagerInstance().info("*** guide "+guide.getGuide_id()+" data in db differs from incoming -- guide tier in db "+guideInDb.getTier());
-            return false;
-        } else {
-            return false; // match -- nothing to do
         }
+
+        return wasUpdated;
     }
 
     public boolean createExperimentIfMissing(int studyId, long experimentId, String expType) throws Exception {
@@ -404,23 +475,6 @@ public class LoadDAO extends AbstractDAO {
         update(sql, newDesc, expId);
     }
 
-    public void updateExperiment(long oldId,long newId) throws Exception {
-        String sql = "update experiment set experiment_id = ? where experiment_id = ?";
-
-        update(sql,newId,oldId);
-        sql = "update experiment_record set experiment_id = ? where experiment_id = ?";
-
-        update(sql,newId,oldId);
-
-       /* String sql = "update guide_associations set experiment_record_id = ? where experiment_record_id = ?";
-
-        update(sql,newId,oldId);
-        sql = "update vector_associations set experiment_record_id = ? where experiment_record_id = ?";
-
-        update(sql,newId,oldId);
-        */
-    }
-
 
     public List<Experiment> getAllExperiments() throws Exception {
         return expDao.getAllExperiments();
@@ -439,7 +493,13 @@ public class LoadDAO extends AbstractDAO {
             throw new Exception(expId+" has study "+e.getStudyId()+"  but you passed different study id: "+studyId);
         }
 
-        String sql = "delete from experiment_result_detail where result_id in (" +
+        String sql = "select scge_id from images where scge_id in(select experiment_record_id from experiment_record where experiment_id = ?)";
+        List<Integer> imageIds = IntListQuery.execute(expDao, sql, expId);
+        if( !imageIds.isEmpty() ) {
+            throw new Exception("### LOAD ABORTED! there are "+imageIds.size()+" for experiment_id = "+expId);
+        }
+
+        sql = "delete from experiment_result_detail where result_id in (" +
                 " select result_id from experiment_result WHERE experiment_record_id in (select experiment_record_id from experiment_record where experiment_id = ?) " +
                 ")";
         rowsDeleted += expDao.update(sql, expId);
