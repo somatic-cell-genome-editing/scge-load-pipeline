@@ -194,8 +194,37 @@ public class LoadDAO extends AbstractDAO {
         studyDao.insertStudy(s);
     }
 
+    public int getMethodId(ApplicationMethod method) throws Exception {
+        prepMethod(method);
+        return methodDao.getAppMethodId(method);
+    }
+
     public int insertMethod(ApplicationMethod method) throws Exception {
+        prepMethod(method);
         return methodDao.insertApplicationMethod(method);
+    }
+
+    void prepMethod(ApplicationMethod method) {
+
+        // several fields must be not null
+        if( method.getApplicationType()==null ) {
+            method.setApplicationType("");
+        }
+        if( method.getDosage()==null ) {
+            method.setDosage("");
+        }
+        if( method.getDaysPostInjection()==null ) {
+            method.setDaysPostInjection("");
+        }
+        if( method.getInjectionFrequency()==null ) {
+            method.setInjectionFrequency("");
+        }
+        if( method.getSiteOfApplication()==null ) {
+            method.setSiteOfApplication("");
+        }
+        if( method.getEditorFormat()==null ) {
+            method.setEditorFormat("");
+        }
     }
 
     public long insertVector(Vector v) throws Exception{
@@ -211,9 +240,6 @@ public class LoadDAO extends AbstractDAO {
 
     public int getAntibodyId(Antibody a) throws Exception {
         return antibodyDao.getAntibodyId(a);
-    }
-    public int getMethodId(ApplicationMethod method) throws Exception {
-        return methodDao.getAppMethodId(method);
     }
 
     public long insertExperimentResult(ExperimentResultDetail e) throws Exception{

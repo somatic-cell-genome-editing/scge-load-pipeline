@@ -8,6 +8,9 @@ import edu.mcw.scge.Manager;
 // revised data loaded on Nov 23, 2022
 // revised data loaded on Jan 05, 2023
 // revised data loaded on Jan 30, 2023
+// loaded on DEV on Mar 3, 2023
+// loaded on STAGE on Mar 7, 2023
+// loaded on DEV/STAGE on Mar 13, 2023
 
 public class COF8 {
 
@@ -16,7 +19,7 @@ public class COF8 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1072;
-        manager.fileName = "data/COF8-1072-3.xlsx";
+        manager.fileName = "data/COF8-1072-5.xlsx";
         manager.tier = 0;
 
         try {

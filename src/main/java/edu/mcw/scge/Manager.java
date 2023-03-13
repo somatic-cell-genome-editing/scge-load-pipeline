@@ -188,6 +188,15 @@ public class Manager {
                 info("======");
                 info("exprec: " + experiment.getExperimentName());
             }
+
+            // CELL+ANIMAL_MODEL
+            // note: this code must be before 'metadata.put(cell1Data, data)' to avoid override of SCGE ID
+            if (section == SECTION.CELL_MODEL  &&  cell0Data.equalsIgnoreCase("Animal Model source of cells")) {
+                metadataForCellModel = new HashMap<>(metadata);
+                metadata.clear();
+                section = SECTION.CELL_ANIMAL_MODEL;
+            }
+
             metadata.put(cell1Data, data);
 
             // EDITOR
@@ -229,11 +238,6 @@ public class Manager {
             }
 
             // CELL+ANIMAL_MODEL
-            if (section == SECTION.CELL_MODEL  &&  cell0Data.equalsIgnoreCase("Animal Model source of cells")) {
-                metadataForCellModel = new HashMap<>(metadata);
-                metadata.clear();
-                section = SECTION.CELL_ANIMAL_MODEL;
-            }
             if (section == SECTION.CELL_ANIMAL_MODEL && isEndOfSection) {
                 long animalModelId = loadAnimalModel(metadata, animalModel);
                 metadataForCellModel.put("Parental Origin", Long.toString(animalModelId));
@@ -888,8 +892,13 @@ public class Manager {
         delivery.setId(0);
         delivery.setSource(metadata.get("Source"));
         delivery.setLabId(metadata.get("Lab Name/ID"));
+        if( Utils.isStringEmpty(delivery.getLabId()) ) {
+            delivery.setLabId(metadata.get("Catalog#"));
+        }
         delivery.setName(metadata.get("Reagent Name"));
         delivery.setDescription(metadata.get("Reagent Description"));
+        delivery.setType("Commercial Reagent");
+
         if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
         }
@@ -1090,6 +1099,9 @@ public class Manager {
         int methodId = dao.getMethodId(method);
         if (methodId == 0) {
             methodId = dao.insertMethod(method);
+            info("  inserted application method " + methodId);
+        } else {
+            info("  got application method " + methodId);
         }
         return methodId;
     }
