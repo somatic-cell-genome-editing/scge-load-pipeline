@@ -163,7 +163,12 @@ public class Mean {
 
                     if (!result.getUnits().equalsIgnoreCase("signal")) {
                         String val = Utils.NVL(result.getResult(), "");
-                        if( val.isEmpty() || val.contains("Not measured") || val.equalsIgnoreCase("NaN") || val.equalsIgnoreCase("N/A") ) {
+                        if( val.isEmpty()
+                                || val.equalsIgnoreCase("Not determined")
+                                || val.equalsIgnoreCase("Not measured")
+                                || val.equalsIgnoreCase("Not provided")
+                                || val.equalsIgnoreCase("NaN")
+                                || val.equalsIgnoreCase("N/A") ) {
                             // do nothing -- NaN
                         } else {
                             average += Double.valueOf(result.getResult());

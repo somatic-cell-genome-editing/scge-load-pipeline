@@ -101,7 +101,7 @@ public class Manager {
         if (data != null) {
             // replace nonbreakable space (&nbsp;) with regular space and then trim
             String newData = data.replace("\u00A0", " ").trim();
-            if (newData.length() != data.length()) {
+            if( !newData.equals(data) ){
                 data = newData;
             }
         }
@@ -472,10 +472,19 @@ public class Manager {
                     cell1.getStringCellValue().equalsIgnoreCase("Delivery Efficiency")) {
                 // todo: throw new Exception("add processing of sections 'Biomarker Detection’ and ‘Other Measurement’ in addition to 'Editing Efficency' and 'Delivery Efficiency'");
 
-                if (data != null && !data.equals("") && !data.equals("N/A")) {
+                if (data != null && !data.equals("") && !data.equals("N/A") &&
+                    !data.equalsIgnoreCase("Not provided") &&
+                    !data.equalsIgnoreCase("Not determined")
+                ) {
                     if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency"))
                         result.setResultType("Editing Efficiency");
                     else result.setResultType("Delivery Efficiency");
+
+                    boolean dataSeriesIsSignal = areDataSeriesSignal(data);
+                    if( dataSeriesIsSignal && !qualitativeData ) {
+                        info("    --- warning: set data type for the series to 'Signal'");
+                        result.setUnits("Signal");
+                    }
 
                     long expRecId = loadExperimentRecord(experimentRecord, mergeExpRecs);
                     result.setExperimentRecordId(expRecId);
@@ -564,12 +573,24 @@ public class Manager {
 
                 result.setResultType(expDataType);
 
-                if (data != null && !data.equals("") && !data.equalsIgnoreCase("ND") && !data.equalsIgnoreCase("Not measured")) {
+                if (data != null &&
+                        !data.equals("") &&
+                        !data.equalsIgnoreCase("ND") &&
+                        !data.equalsIgnoreCase("Not determined") &&
+                        !data.equalsIgnoreCase("Not provided") &&
+                        !data.equalsIgnoreCase("Not measured")) {
+
                     log.debug(studyId + " " + experimentId + " " + cell1);
                     expRec.setTissueId(cell1.getStringCellValue());
                     if (cell2 != null)
                         expRec.setCellType(cell2.getStringCellValue());
                     expRec.setOrganSystemID(cell0.getStringCellValue());
+
+                    boolean dataSeriesIsSignal = areDataSeriesSignal(data);
+                    if( dataSeriesIsSignal && !qualitativeData ) {
+                        info("    --- warning: set data type for the series to 'Signal'");
+                        result.setUnits("Signal");
+                    }
 
                     long expRecId = loadExperimentRecord(expRec, mergeExpRecs);
                     result.setExperimentRecordId(expRecId);
@@ -582,6 +603,30 @@ public class Manager {
         }
     }
 
+    boolean areDataSeriesSignal(String data) {
+        int signalDataCount = 0;
+        int numericDataCount = 0;
+        String valueString = data;
+        String[] values = valueString.split(",");
+        for (int i = 0; i < values.length; i++) {
+            String val = values[i].trim().toLowerCase();
+            if( val.isEmpty() || val.equals("n/a") ) {
+                continue;
+            }
+
+            if( val.equals("present") || val.equals("absent") ) {
+                signalDataCount++;
+            } else {
+                try {
+                    Double.parseDouble(val);
+                    numericDataCount++;
+                } catch( NumberFormatException e) {}
+            }
+        }
+
+        return signalDataCount>0 && numericDataCount==0;
+    }
+
     void loadDataSeries(String data, long resultId) throws Exception {
         String valueString = data;
         String[] values = valueString.split(",");
@@ -590,6 +635,7 @@ public class Manager {
             if( val.isEmpty() || val.equals("n/a") ) {
                 continue;
             }
+
             ExperimentResultDetail detail = new ExperimentResultDetail();
             detail.setResultId(resultId);
             detail.setReplicate(i + 1);
@@ -1072,7 +1118,7 @@ public class Manager {
             model.setModelId(modelId);
             info(" Inserted model: " + modelId);
         } else {
-            info(" Got model by matching against DB: " + modelId);
+            info("  got model by matching against DB: " + modelId);
 
             model.setModelId(modelId);
             if( dao.updateModelIfNeeded(model) ) {
@@ -1110,7 +1156,7 @@ public class Manager {
         Antibody antibody = new Antibody();
         if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
             antibody.setAntibodyId(new BigDecimal(metadata.get("SCGE ID")).intValue());
-            info(" Got Antibody " + antibody.getAntibodyId());
+            info("  got antibody " + antibody.getAntibodyId());
             antibodies.add(antibody.getAntibodyId());
         } else {
             antibody.setRrid(metadata.get("RRID"));
@@ -1124,7 +1170,7 @@ public class Manager {
                 if (antibodyId == 0) {
                     antibodyId = dao.insertAntibody(antibody);
                     info(" Inserted Antibody " + antibodyId);
-                } else info(" Got Antibody " + antibodyId);
+                } else info("  got antibody " + antibodyId);
                 antibodies.add(antibodyId);
             }
         }
@@ -1207,48 +1253,6 @@ public class Manager {
         return null;
     }
 
-    // obsolete: use Mean class instead
-    public void loadQualitativeMean(long expId) throws Exception {
-
-        int insertedRows = 0;
-        List<ExperimentRecord> records = dao.getExpRecords(expId);
-        for (ExperimentRecord record : records) {
-            List<ExperimentResultDetail> experimentResults = dao.getExperimentalResults(record.getExperimentRecordId());
-
-            long resultId = 0;
-            int anyCount = 0;
-            int presentCount = 0;
-            int notReportedCount = 0;
-
-            for (ExperimentResultDetail result : experimentResults) {
-                if (result.getReplicate() != 0) {
-                    if (result.getResult().equals("present")) {
-                        presentCount++;
-                    }
-                    if (result.getResult().equals("not reported")) {
-                        notReportedCount++;
-                    }
-                    anyCount++;
-
-                    resultId = result.getResultId();
-                }
-            }
-
-            ExperimentResultDetail resultMean = new ExperimentResultDetail();
-            resultMean.setReplicate(0);
-            resultMean.setResultId(resultId);
-            if (notReportedCount == anyCount) {
-                resultMean.setResult("not reported");
-            } else {
-                resultMean.setResult(presentCount + " of " + anyCount + " present");
-            }
-
-            dao.insertExperimentResultDetail(resultMean);
-            insertedRows++;
-        }
-
-        info(" inserted rows with replicate 0: " + insertedRows);
-    }
 
     public void info(String msg) {
         log.info(studyId + " " + experimentId + " " + msg);

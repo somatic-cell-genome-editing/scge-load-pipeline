@@ -12,7 +12,7 @@ public class COF26 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1073;
-        manager.fileName = "data/COF26-1073-1.xlsx";
+        manager.fileName = "data/COF26-1073-2.xlsx";
         manager.tier = 0;
 
         try {

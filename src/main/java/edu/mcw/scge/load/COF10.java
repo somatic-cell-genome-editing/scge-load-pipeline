@@ -4,7 +4,8 @@ import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.Manager;
 
 // loaded on DEV on Jan 20, 2023
-// loaded on DEV/STAGE on Mar 03+, 2023   TODO
+// loaded on DEV/STAGE on Mar 03, 2023
+// loaded on DEV/STAGE on Mar 13, 2023
 
 public class COF10 {
 
@@ -18,14 +19,14 @@ public class COF10 {
 
         try {
 
-            //manager.loadExperimentNumericData(18000000079L, "In Vitro - Fig1", 10);
-            //manager.loadExperimentNumericData(18000000080L, "In Vitro - Fig2", 11);
+            manager.loadExperimentNumericData(18000000079L, "In Vitro - Fig1", 10);
+            manager.loadExperimentNumericData(18000000080L, "In Vitro - Fig2", 11);
             manager.loadExperimentNumericData(18000000081L, "In Vitro - Fig3", 9);
-            //manager.loadExperimentNumericData(18000000082L, "In Vitro - Fig4", 7);
-            //manager.loadExperimentNumericData(18000000083L, "In Vitro - Fig5", 8);
-            //manager.loadExperimentNumericData(18000000084L, "In Vitro - Fig6", 6);
+            manager.loadExperimentNumericData(18000000082L, "In Vitro - Fig4", 7);
+            manager.loadExperimentNumericData(18000000083L, "In Vitro - Fig5", 8);
+            manager.loadExperimentNumericData(18000000084L, "In Vitro - Fig6", 6);
 
-            //manager.loadExperimentSignalData(18000000085L, "In Vivo - Fig8", 7);
+            manager.loadExperimentNumericData(18000000085L, "In Vivo - Fig8", 7);
 
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());
