@@ -12,11 +12,12 @@ public class COF26 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1073;
-        manager.fileName = "data/COF26-1073-2.xlsx";
+        manager.fileName = "data/COF26-1073-4.xlsx";
         manager.tier = 0;
 
         try {
 
+            manager.loadExperimentRecordsWithNoDataSeries = false;
             manager.loadExperimentNumericData(18000000086L, "In Vitro", 3);
 
         } catch (Exception e) {

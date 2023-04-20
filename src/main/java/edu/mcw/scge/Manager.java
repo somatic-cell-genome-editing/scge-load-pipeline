@@ -39,6 +39,7 @@ public class Manager {
         ANIMAL_MODEL,
         CELL_MODEL,
         CELL_ANIMAL_MODEL,
+        ORGANOID_MODEL,
         EXPERIMENT_DETAILS,
         OTHER_EXPERIMENT_DETAILS,
     }
@@ -48,6 +49,7 @@ public class Manager {
     public String fileName = "0.xlsx";
     public String expType = "In Vivo";
     public int tier = 0;
+    public boolean loadExperimentRecordsWithNoDataSeries = false;
 
     Set<Long> vectors = new TreeSet<>();
     Set<Long> guides = new TreeSet<>();
@@ -131,7 +133,7 @@ public class Manager {
         boolean antibodyData = false;
         Guide guide = new Guide();
         Editor editor = new Editor();
-        Delivery delivery = new Delivery();
+        Set<Long> deliveryIds = new HashSet<>();
         Model model = new Model();
         Model animalModel = new Model();
         HashMap<String, String> metadataForCellModel = null;
@@ -247,6 +249,15 @@ public class Manager {
                 metadataForCellModel = null;
             }
 
+            // ORGANOID MODEL
+            if (cell0Data.equalsIgnoreCase("Organoid (Tissue model)")) {
+                section = SECTION.ORGANOID_MODEL;
+            }
+            if (section == SECTION.ORGANOID_MODEL && isEndOfSection) {
+                experiment.setModelId(loadOrganoidModel(metadata, model));
+                metadata.clear();
+            }
+
             // HR DONOR
             if (cell0Data.equalsIgnoreCase("HR DONOR")) {
                 section = SECTION.HRDONOR;
@@ -270,10 +281,9 @@ public class Manager {
                 section = SECTION.DS_PROTEIN_CONJUGATE;
             }
             if (section == SECTION.DS_PROTEIN_CONJUGATE && isEndOfSection) {
-                long dsId = loadProtienConjugate(metadata, delivery);
+                long dsId = loadProtienConjugate(metadata);
                 if (dsId != 0) {
-                    info("Delivery System (Protein Conjugate) = " + dsId);
-                    experiment.setDeliverySystemId(dsId);
+                    deliveryIds.add(dsId);
                 }
                 metadata.clear();
             }
@@ -283,10 +293,9 @@ public class Manager {
                 section = SECTION.DS_VIRUS_LIKE_PARTICLE;
             }
             if (section == SECTION.DS_VIRUS_LIKE_PARTICLE && isEndOfSection) {
-                long dsId = loadVirusParticle(metadata, delivery);
+                long dsId = loadVirusParticle(metadata);
                 if (dsId != 0) {
-                    info("Delivery System (Virus Like Particle) = " + dsId);
-                    experiment.setDeliverySystemId(dsId);
+                    deliveryIds.add(dsId);
                 }
                 metadata.clear();
             }
@@ -296,10 +305,9 @@ public class Manager {
                 section = SECTION.DS_COMMERCIAL_REAGENT;
             }
             if (section == SECTION.DS_COMMERCIAL_REAGENT && isEndOfSection) {
-                long dsId = loadCommercialReagent(metadata, delivery);
+                long dsId = loadCommercialReagent(metadata);
                 if (dsId != 0) {
-                    info("Delivery System (Commercial Reagent) = " + dsId);
-                    experiment.setDeliverySystemId(dsId);
+                    deliveryIds.add(dsId);
                 }
                 metadata.clear();
             }
@@ -309,10 +317,9 @@ public class Manager {
                 section = SECTION.DS_AMPHIPHILIC_PEPTIDE;
             }
             if (section == SECTION.DS_AMPHIPHILIC_PEPTIDE && isEndOfSection) {
-                long dsId = loadAmphiphilicPeptide(metadata, delivery);
+                long dsId = loadAmphiphilicPeptide(metadata);
                 if (dsId != 0) {
-                    info("Delivery System (Amphiphilic peptide) = " + dsId);
-                    experiment.setDeliverySystemId(dsId);
+                    deliveryIds.add(dsId);
                 }
                 metadata.clear();
             }
@@ -322,10 +329,9 @@ public class Manager {
                 section = SECTION.DS_NANOPARTICLE;
             }
             if (section == SECTION.DS_NANOPARTICLE && isEndOfSection) {
-                long dsId = loadNanoparticle(metadata, delivery);
+                long dsId = loadNanoparticle(metadata);
                 if (dsId != 0) {
-                    info("Delivery System (Nanoparticle) = " + dsId);
-                    experiment.setDeliverySystemId(dsId);
+                    deliveryIds.add(dsId);
                 }
                 metadata.clear();
             }
@@ -416,10 +422,17 @@ public class Manager {
             }
         }
 
-        if (expType.contains("Vitro")) {
-            loadDataInVitro(experiment, column, qualitativeData, expRecDetails);
-        } else {
-            loadDataInVivo(experiment, column, qualitativeData, expRecDetails);
+        // ensure there is at least one delivery_id
+        if( deliveryIds.isEmpty() ) {
+            deliveryIds.add(0l);
+        }
+        for( long deliveryId: deliveryIds ) {
+            experiment.setDeliverySystemId(deliveryId);
+            if (expType.contains("Vitro")) {
+                loadDataInVitro(experiment, column, qualitativeData, expRecDetails);
+            } else {
+                loadDataInVivo(experiment, column, qualitativeData, expRecDetails);
+            }
         }
     }
 
@@ -472,10 +485,14 @@ public class Manager {
                     cell1.getStringCellValue().equalsIgnoreCase("Delivery Efficiency")) {
                 // todo: throw new Exception("add processing of sections 'Biomarker Detection’ and ‘Other Measurement’ in addition to 'Editing Efficency' and 'Delivery Efficiency'");
 
-                if (data != null && !data.equals("") && !data.equals("N/A") &&
-                    !data.equalsIgnoreCase("Not provided") &&
-                    !data.equalsIgnoreCase("Not determined")
-                ) {
+                boolean noData = data == null ||
+                        data.equals("") ||
+                        data.equals("N/A") ||
+                        data.equalsIgnoreCase("Not provided") ||
+                        data.equalsIgnoreCase("Not determined");
+
+                if ( noData==false || this.loadExperimentRecordsWithNoDataSeries ) {
+
                     if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency"))
                         result.setResultType("Editing Efficiency");
                     else result.setResultType("Delivery Efficiency");
@@ -488,10 +505,23 @@ public class Manager {
 
                     long expRecId = loadExperimentRecord(experimentRecord, mergeExpRecs);
                     result.setExperimentRecordId(expRecId);
-                    loadExperimentRecordDetails(expRecId, expRecDetails);
+                    if( expRecId != 0 ) {
+                        loadExperimentRecordDetails(expRecId, expRecDetails);
 
-                    long resultId = dao.insertExperimentResult(result);
-                    loadDataSeries(data, resultId);
+                        boolean detailsPresent = result.getNumberOfSamples()!=0
+                            || !Utils.isStringEmpty(result.getUnits())
+                            || !Utils.isStringEmpty(result.getAssayDescription())
+                            || !Utils.isStringEmpty(result.getEditType());
+
+                        if( detailsPresent ) {
+                            long resultId = dao.insertExperimentResult(result);
+                            if (resultId != 0) {
+                                loadDataSeries(data, resultId);
+                            }
+                        }
+                    }
+
+                    result = new ExperimentResultDetail();
                 }
             }
         }
@@ -865,15 +895,19 @@ public class Manager {
         }
     }
 
-    private long loadProtienConjugate(HashMap<String, String> metadata, Delivery delivery) throws Exception {
+    private long loadProtienConjugate(HashMap<String, String> metadata) throws Exception {
+
         if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
-            delivery.setId(new BigDecimal(metadata.get("SCGE ID")).longValue());
-            return delivery.getId();
+            long id = new BigDecimal(metadata.get("SCGE ID")).longValue();
+            return id;
         }
+
+        Delivery delivery = new Delivery();
         delivery.setId(0);
 
         delivery.setSource(metadata.get("Source"));
         delivery.setLabId(metadata.get("Lab Name/ID"));
+        delivery.setName(delivery.getLabId());
         delivery.setDescription(metadata.get("PCJ Description"));
         delivery.setType("Protein Conjugate");
 
@@ -897,18 +931,19 @@ public class Manager {
         return deliveryId;
     }
 
-    private long loadVirusParticle(HashMap<String, String> metadata, Delivery delivery) throws Exception {
+    private long loadVirusParticle(HashMap<String, String> metadata) throws Exception {
         if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
-            delivery.setId(new BigDecimal(metadata.get("SCGE ID")).longValue());
-            return delivery.getId();
+            return new BigDecimal(metadata.get("SCGE ID")).longValue();
         }
+
+        Delivery delivery = new Delivery();
         delivery.setId(0);
         delivery.setSource(metadata.get("Source"));
         delivery.setLabId(metadata.get("Lab Name/ID"));
         delivery.setName(metadata.get("Lab Name/ID"));
         delivery.setDescription(metadata.get("VLP Description"));
-        delivery.setType("Virus Like Particle");
 
+        delivery.setType("Virus Like Particle");
         if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
         }
@@ -929,12 +964,12 @@ public class Manager {
         return deliveryId;
     }
 
-    private long loadCommercialReagent(HashMap<String, String> metadata, Delivery delivery) throws Exception {
+    private long loadCommercialReagent(HashMap<String, String> metadata) throws Exception {
         if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
-            delivery.setId(new BigDecimal(metadata.get("SCGE ID")).longValue());
-            return delivery.getId();
+            return new BigDecimal(metadata.get("SCGE ID")).longValue();
         }
 
+        Delivery delivery = new Delivery();
         delivery.setId(0);
         delivery.setSource(metadata.get("Source"));
         delivery.setLabId(metadata.get("Lab Name/ID"));
@@ -943,8 +978,8 @@ public class Manager {
         }
         delivery.setName(metadata.get("Reagent Name"));
         delivery.setDescription(metadata.get("Reagent Description"));
-        delivery.setType("Commercial Reagent");
 
+        delivery.setType("Commercial Reagent");
         if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
         }
@@ -965,12 +1000,12 @@ public class Manager {
         return deliveryId;
     }
 
-    private long loadAmphiphilicPeptide(HashMap<String, String> metadata, Delivery delivery) throws Exception {
+    private long loadAmphiphilicPeptide(HashMap<String, String> metadata) throws Exception {
         String scgeId = metadata.get("SCGE ID");
         if (!Utils.isStringEmpty(scgeId)) {
-            delivery.setId(new BigDecimal(scgeId).longValue());
-            return delivery.getId();
+            return new BigDecimal(scgeId).longValue();
         }
+        Delivery delivery = new Delivery();
         delivery.setId(0);
 
         delivery.setSource(metadata.get("Source"));
@@ -979,6 +1014,7 @@ public class Manager {
         delivery.setDescription(metadata.get("AP Description"));
         delivery.setSequence(metadata.get("AP Sequence"));
 
+        delivery.setType("Amphiphilic peptide");
         if( Utils.isStringEmpty(delivery.getLabId()) ) {
             return 0;
         }
@@ -999,7 +1035,8 @@ public class Manager {
         return deliveryId;
     }
 
-    private long loadNanoparticle(HashMap<String, String> metadata, Delivery delivery) throws Exception {
+    private long loadNanoparticle(HashMap<String, String> metadata) throws Exception {
+        Delivery delivery = new Delivery();
         if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
             delivery.setId(new BigDecimal(metadata.get("SCGE ID")).longValue());
             return delivery.getId();
@@ -1103,6 +1140,31 @@ public class Manager {
         model.setTransgeneReporter(metadata.get("Transgene Reporter"));
 
         return loadModelInDb(model, "Cell");
+    }
+
+    private long loadOrganoidModel(HashMap<String, String> metadata, Model model) throws Exception {
+        if (metadata.containsKey("SCGE ID") && metadata.get("SCGE ID") != null && !metadata.get("SCGE ID").isEmpty()) {
+            model.setModelId(new BigDecimal(metadata.get("SCGE ID")).longValue());
+            info(" Got model: " + model.getModelId());
+            return model.getModelId();
+        }
+        model.setName(metadata.get("Organoid Name"));
+        model.setSubtype(metadata.get("Organoid Type"));
+        model.setDescription(metadata.get("Organoid description"));
+        model.setSource(metadata.get("Source"));
+        model.setCatalog(metadata.get("Catalog#"));
+        model.setOrganism(metadata.get("Species"));
+        model.setSex(getSex(metadata.get("Sex")));
+        model.setTransgene(metadata.get("Transgene"));
+        model.setTransgeneDescription(metadata.get("Transgene Description"));
+        model.setTransgeneReporter(metadata.get("Transgene Reporter"));
+        model.setAnnotatedMap(metadata.get("Annotated Map"));
+        model.setParentalOrigin(metadata.get("Cell line origin"));
+
+        model.setRrid(metadata.get("RRID link"));
+        model.setOfficialName(metadata.get("Official Name"));
+
+        return loadModelInDb(model, "Organoid");
     }
 
     private long loadModelInDb(Model model, String modelType) throws Exception {
