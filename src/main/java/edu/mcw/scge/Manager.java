@@ -177,7 +177,7 @@ public class Manager {
                 String expDesc = data.trim();
                 Experiment e = getDao().getExperiment(experimentId);
                 if( !Utils.stringsAreEqual(expDesc, e.getDescription()) ) {
-                    e.setName(expDesc);
+                    e.setDescription(expDesc);
                     getDao().updateExperimentDesc(experimentId, expDesc);
                     info("   updated experiment description to ["+expDesc+"]");
                 }
@@ -1062,13 +1062,13 @@ public class Manager {
             delivery.setTier(tier);
             deliveryId = dao.insertDelivery(delivery);
             delivery.setId(deliveryId);
-            info(" Inserted Nanoparticle: " + deliveryId);
+            info("  inserted Nanoparticle: " + deliveryId);
         } else {
-            info("  Got Nanoparticle by matching against DB: " + deliveryId);
+            info("  got Nanoparticle by matching against DB: " + deliveryId);
 
             delivery.setId(deliveryId);
             if( dao.updateDeliveryIfNeeded(delivery) ) {
-                info("    nanoparticle data updated in db");
+                info("    ### nanoparticle data updated in db");
             }
         }
         return deliveryId;

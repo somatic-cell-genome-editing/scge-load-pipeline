@@ -1,9 +1,11 @@
 package edu.mcw.scge.load;
 
+import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.Manager;
-import edu.mcw.scge.Mean;
 
-// study loaded in Nov 15, 2022
+// study loaded on Nov 15, 2022
+// reloaded on Apr 21, 2023
+
 public class Saltzman {
 
     public static void main(String[] args) {
@@ -11,19 +13,17 @@ public class Saltzman {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1047;
-        manager.experimentId = 18000000058L;
-        manager.fileName = "data/Saltzman1.xlsx";
-        manager.expType = "In Vivo";
+        manager.fileName = "data/Saltzman-1047-2.xlsx";
         manager.tier = 0;
 
         try {
-            for( int column=3; column<=27; column++ ) { // 0-based column in the excel sheet
-                String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name, false);
-            }
-            Mean.loadMean(manager.experimentId, manager);
+
+            manager.loadExperimentRecordsWithNoDataSeries = false;
+            manager.loadExperimentNumericData(18000000058L, "In Vivo", 26);
+
         } catch (Exception e) {
-            e.printStackTrace();
+            Utils.printStackTrace(e, manager.getLog());
         }
+
     }
 }
