@@ -1301,15 +1301,19 @@ public class Manager {
     }
 
     private String getSex(String value) {
-        if (value != null && !value.isEmpty()) {
-            if (value.equalsIgnoreCase("M")) {
-                return "Male";
-            } else if (value.equalsIgnoreCase("F")) {
-                return "Female";
-            } else if (value.equalsIgnoreCase("Male")) {
-                return "Male";
-            } else if (value.equalsIgnoreCase("Female")) {
-                return "Female";
+        if ( value != null ) {
+
+            switch( value.toLowerCase() ) {
+                case "m":
+                case "male":
+                    return "Male";
+                case "f":
+                case "female":
+                    return "Female";
+                case "m/f":
+                case "f/m":
+                case "mixed":
+                    return "Mixed";
             }
         }
         return null;
