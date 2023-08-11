@@ -128,6 +128,15 @@ public class LoadDAO extends AbstractDAO {
         return modelDao.getModelId(model);
     }
 
+    public Model getModel(long modelId) throws Exception {
+        return modelDao.getModelById(modelId);
+    }
+
+    public void setParentalOriginForModel( long modelId, String parentalOrigin ) throws Exception {
+        String sql = "UPDATE model SET parental_origin=? WHERE model_id=?";
+        modelDao.update(sql, parentalOrigin, modelId);
+    }
+
     public long getGuideId(Guide guide) throws Exception {
         return guideDao.getGuideId(guide);
     }

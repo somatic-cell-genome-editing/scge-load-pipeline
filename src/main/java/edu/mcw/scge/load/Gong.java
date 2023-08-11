@@ -12,7 +12,7 @@ public class Gong {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1083;
-        manager.fileName = "data/Gong-1083-2.xlsx";
+        manager.fileName = "data/Gong-1083-4.xlsx";
         manager.tier = 0;
 
         try {

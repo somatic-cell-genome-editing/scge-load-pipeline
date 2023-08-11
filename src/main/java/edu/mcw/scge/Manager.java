@@ -110,11 +110,7 @@ public class Manager {
         return data;
     }
 
-    public void loadMetaData(int column, String name, boolean qualitativeData, boolean mergeExpRecs) throws Exception {
-        loadMetaData(column, name, qualitativeData);
-    }
-
-    public void loadMetaData(int column, String name, boolean qualitativeData) throws Exception {
+    public void loadMetaData(int column, String name) throws Exception {
 
         // reset lists
         vectors.clear();
@@ -162,6 +158,13 @@ public class Manager {
             String cell0Data = cell0 == null ? "" : cell0.getStringCellValue();
             String cell1Data = cell1 == null ? "" : cell1.getStringCellValue();
             boolean isEndOfSection = cell1Data.equalsIgnoreCase("Related publication description");
+            // for schema 5.7, this line is not available: use 'Transgene Reporter' to detect the last line of cell model
+            if( !isEndOfSection && section==SECTION.CELL_MODEL ) {
+                if( cell1Data.equalsIgnoreCase("Transgene Reporter") ) {
+                    //metadataForCellModel.put("Transgene Reporter", data);
+                    isEndOfSection = true;
+                }
+            }
 
             // update experiment name and description if needed
             if( section==SECTION.NONE && cell1Data.equalsIgnoreCase("Experiment Title") && !Utils.isStringEmpty(data) ) {
@@ -243,7 +246,23 @@ public class Manager {
             if (section == SECTION.CELL_ANIMAL_MODEL && isEndOfSection) {
                 long animalModelId = loadAnimalModel(metadata, animalModel);
                 metadataForCellModel.put("Parental Origin", Long.toString(animalModelId));
-                experiment.setModelId(loadCellModel(metadataForCellModel, model));
+                long cellModelId = loadCellModel(metadataForCellModel, model);
+                if( cellModelId == 0 && model.getModelId()!=0 ) {
+                    cellModelId = model.getModelId();
+
+                    // validate parental origin
+                    Model cellModelInRgd = dao.getModel(model.getModelId());
+                    if( cellModelInRgd!=null ) {
+                        if( Utils.isStringEmpty(cellModelInRgd.getParentalOrigin()) || cellModelInRgd.getParentalOrigin().equals("0") ) {
+                            dao.setParentalOriginForModel(cellModelId, metadataForCellModel.get("Parental Origin"));
+                        } else {
+                            if( !metadataForCellModel.get("Parental Origin").equals(cellModelInRgd.getParentalOrigin()) ) {
+                                info("*** CONFLICT *** parental origin for "+cellModelId);
+                            }
+                        }
+                    }
+                }
+                experiment.setModelId(cellModelId);
 
                 metadata.clear();
                 metadataForCellModel = null;
@@ -254,7 +273,10 @@ public class Manager {
                 section = SECTION.ORGANOID_MODEL;
             }
             if (section == SECTION.ORGANOID_MODEL && isEndOfSection) {
-                experiment.setModelId(loadOrganoidModel(metadata, model));
+                long organoidModelId = loadOrganoidModel(metadata, model);
+                if( organoidModelId!=0 ) {
+                    experiment.setModelId(organoidModelId);
+                }
                 metadata.clear();
             }
 
@@ -429,15 +451,15 @@ public class Manager {
         for( long deliveryId: deliveryIds ) {
             experiment.setDeliverySystemId(deliveryId);
             if (expType.contains("Vitro")) {
-                loadDataInVitro(experiment, column, qualitativeData, expRecDetails);
+                loadDataInVitro(experiment, column, expRecDetails);
             } else {
-                loadDataInVivo(experiment, column, qualitativeData, expRecDetails);
+                loadDataInVivo(experiment, column, expRecDetails);
             }
         }
     }
 
 
-    public void loadDataInVitro(ExperimentRecord experimentRecord, int column, boolean qualitativeData, Map<String,String> expRecDetails) throws Exception {
+    public void loadDataInVitro(ExperimentRecord experimentRecord, int column, Map<String,String> expRecDetails) throws Exception {
         boolean mergeExpRecs = true;
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
@@ -475,11 +497,7 @@ public class Manager {
                 }
             }
             if (cell1.getStringCellValue().equalsIgnoreCase("Units")) {
-                if (qualitativeData) {
-                    result.setUnits("Signal");
-                } else {
-                    result.setUnits(data);
-                }
+                result.setUnits(data);
             }
             if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency") ||
                     cell1.getStringCellValue().equalsIgnoreCase("Delivery Efficiency")) {
@@ -493,13 +511,17 @@ public class Manager {
 
                 if ( noData==false || this.loadExperimentRecordsWithNoDataSeries ) {
 
+                    // hack: data cleanup
+                    if( data.startsWith("n=") ) {
+                        data = data.substring(2).trim();
+                    }
+
                     if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency"))
                         result.setResultType("Editing Efficiency");
                     else result.setResultType("Delivery Efficiency");
 
                     boolean dataSeriesIsSignal = areDataSeriesSignal(data);
-                    if( dataSeriesIsSignal && !qualitativeData ) {
-                        info("    --- warning: set data type for the series to 'Signal'");
+                    if( dataSeriesIsSignal ) {
                         result.setUnits("Signal");
                     }
 
@@ -527,7 +549,7 @@ public class Manager {
         }
     }
 
-    public void loadDataInVivo(ExperimentRecord expRec, int column, boolean qualitativeData, Map<String,String> expRecDetails) throws Exception {
+    public void loadDataInVivo(ExperimentRecord expRec, int column, Map<String,String> expRecDetails) throws Exception {
         boolean mergeExpRecs = true;
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
@@ -590,11 +612,7 @@ public class Manager {
                     result.setNumberOfSamples(Double.valueOf(data).intValue());
                 }
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Units")) {
-                if (qualitativeData) {
-                    result.setUnits("Signal");
-                } else {
-                    result.setUnits(data);
-                }
+                result.setUnits(data);
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Edit Type")) {
                 result.setEditType(data);
             } else if (cell1.getStringCellValue().equalsIgnoreCase("Measure is Normalized")) {
@@ -617,8 +635,7 @@ public class Manager {
                     expRec.setOrganSystemID(cell0.getStringCellValue());
 
                     boolean dataSeriesIsSignal = areDataSeriesSignal(data);
-                    if( dataSeriesIsSignal && !qualitativeData ) {
-                        info("    --- warning: set data type for the series to 'Signal'");
+                    if( dataSeriesIsSignal ) {
                         result.setUnits("Signal");
                     }
 
@@ -644,7 +661,7 @@ public class Manager {
                 continue;
             }
 
-            if( val.equals("present") || val.equals("absent") ) {
+            if( val.equals("present") || val.equals("absent") || val.startsWith("inconclusive") ) {
                 signalDataCount++;
             } else {
                 try {
@@ -1401,14 +1418,14 @@ public class Manager {
     }
 
     public void loadExperimentNumericData(long expId, String worksheet, int dataCols) throws Exception {
-        loadExperimentData(expId, worksheet, dataCols, true);
+        loadExperimentData(expId, worksheet, dataCols, 3);
     }
 
     public void loadExperimentSignalData(long expId, String worksheet, int dataCols) throws Exception {
-        loadExperimentData(expId, worksheet, dataCols, false);
+        loadExperimentData(expId, worksheet, dataCols, 3);
     }
 
-    public void loadExperimentData(long expId, String worksheet, int dataCols, boolean numericData) throws Exception {
+    public void loadExperimentData(long expId, String worksheet, int dataCols, int firstDataColNr) throws Exception {
 
         experimentId = expId;
         expType = worksheet;
@@ -1423,21 +1440,15 @@ public class Manager {
         }
 
         // columns of numeric data
-        for (int column = 3; column < 3 + dataCols; column++) { // 0-based column in the excel sheet
+        for (int column = firstDataColNr; column < firstDataColNr + dataCols; column++) { // 0-based column in the excel sheet
             String name = "Condition 1"; //exp record name to be loaded, if not present
-            loadMetaData(column, name, !numericData);
+            loadMetaData(column, name);
         }
         Mean.loadMean(experimentId, this);
 
         finish();
     }
 
-    String getTrimmedString(String s) {
-        if( s==null ) {
-            return null;
-        }
-        return s.trim();
-    }
 
     public LoadDAO getDao() {
         return dao;

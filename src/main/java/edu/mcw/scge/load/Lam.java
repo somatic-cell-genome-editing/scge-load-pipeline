@@ -26,7 +26,6 @@ public class Lam {
 
             boolean loadInVivo1 = true;
             boolean loadInVivo2 = false;
-            boolean qualitativeData; // if true, it overrides units for experiment data to 'Signal'
 
             // load "In Vivo" sheet
             if(loadInVivo1) {
@@ -43,16 +42,14 @@ public class Lam {
                 }
 
                 {
-                    qualitativeData = true;
                     int column = 3;
-                    manager.loadMetaData(column, name, qualitativeData);
+                    manager.loadMetaData(column, name);
                 }
 
                 // quantitative data in column 4
                 {
-                    qualitativeData = false;
                     int column = 4;
-                    manager.loadMetaData(column, name, qualitativeData);
+                    manager.loadMetaData(column, name);
                 }
 
                 // TODO: manually compute means: mixed qualitative and quantitative data

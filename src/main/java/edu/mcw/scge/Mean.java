@@ -4,7 +4,6 @@ import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.datamodel.ExperimentRecord;
 import edu.mcw.scge.datamodel.ExperimentResultDetail;
 
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -171,7 +170,11 @@ public class Mean {
                                 || val.equalsIgnoreCase("N/A") ) {
                             // do nothing -- NaN
                         } else {
-                            average += Double.valueOf(result.getResult());
+                            String val2 = result.getResult();
+                            if( val2.endsWith("%") ) {
+                                val2 = val2.substring(0, val2.length()-1).trim();
+                            }
+                            average += Double.valueOf(val2);
                             noOfSamples++;
                         }
                     }

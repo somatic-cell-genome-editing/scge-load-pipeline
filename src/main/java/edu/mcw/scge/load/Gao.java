@@ -25,7 +25,7 @@ public class Gao {
             manager.expType = "In Vivo";
             for( int column = 3; column < 3+3; column++ ) { // 0-based column in the excel sheet
                 String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name, false);
+                manager.loadMetaData(column, name);
             }
             Mean.loadMean(manager.experimentId, manager);
 
@@ -40,7 +40,7 @@ public class Gao {
             manager.expType = "In Vivo (2)";
             for (int column = 3; column < 3+2; column++) { // 0-based column in the excel sheet
                 String name = "Condition 1"; //exp record name to be loaded, if not present
-                manager.loadMetaData(column, name, false);
+                manager.loadMetaData(column, name);
             }
             Mean.loadMean(manager.experimentId, manager);
 
