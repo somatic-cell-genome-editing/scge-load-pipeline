@@ -11,6 +11,7 @@ import edu.mcw.scge.Manager;
 // study loaded on DEV/STAGE on Feb 13, 2023
 // study loaded on DEV on Aug 09, 2023 -- schema v. 5.7, data in column 5, not 3
 // study loaded on DEV/STAGE on Aug 11, 2023
+// study loaded on DEV/STAGE on Sep 06, 2023
 
 public class Murray_TLR7 {
 
@@ -19,7 +20,7 @@ public class Murray_TLR7 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1077;
-        manager.fileName = "data/Murray_TLR7-1077-5.xlsx";
+        manager.fileName = "data/Murray_TLR7-1077-6.xlsx";
         manager.tier = 0;
 
         try {

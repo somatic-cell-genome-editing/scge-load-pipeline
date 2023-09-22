@@ -228,7 +228,10 @@ public class Manager {
                 section = SECTION.ANIMAL_MODEL;
             }
             if (section == SECTION.ANIMAL_MODEL && isEndOfSection) {
-                experiment.setModelId(loadAnimalModel(metadata, model));
+                long modelId = loadAnimalModel(metadata, model);
+                if( modelId!=0 ) {
+                    experiment.setModelId(modelId);
+                }
                 metadata.clear();
             }
 
@@ -238,7 +241,10 @@ public class Manager {
                 section = SECTION.CELL_MODEL;
             }
             if (section == SECTION.CELL_MODEL && isEndOfSection) {
-                experiment.setModelId(loadCellModel(metadata, model));
+                long modelId = loadCellModel(metadata, model);
+                if( modelId!=0 ) {
+                    experiment.setModelId(modelId);
+                }
                 metadata.clear();
             }
 
@@ -262,7 +268,9 @@ public class Manager {
                         }
                     }
                 }
-                experiment.setModelId(cellModelId);
+                if( cellModelId!=0 ) {
+                    experiment.setModelId(cellModelId);
+                }
 
                 metadata.clear();
                 metadataForCellModel = null;
@@ -450,106 +458,12 @@ public class Manager {
         }
         for( long deliveryId: deliveryIds ) {
             experiment.setDeliverySystemId(deliveryId);
-            if (expType.contains("Vitro")) {
-                loadDataInVitro(experiment, column, expRecDetails);
-            } else {
-                loadDataInVivo(experiment, column, expRecDetails);
-            }
+            loadExperimentRecords(experiment, column, expRecDetails);
         }
     }
 
 
-    public void loadDataInVitro(ExperimentRecord experimentRecord, int column, Map<String,String> expRecDetails) throws Exception {
-        boolean mergeExpRecs = true;
-        FileInputStream fis = new FileInputStream(fileName);
-        XSSFWorkbook wb = new XSSFWorkbook(fis);
-        XSSFSheet sheet = wb.getSheet(expType);
-        ExperimentResultDetail result = new ExperimentResultDetail();
-
-        for (Row row : sheet) {
-            Cell cell1 = row.getCell(1);
-            Cell cell = row.getCell(column);
-            String data;
-            if (row.getRowNum() < 3 || cell1 == null)
-                continue;
-
-            if (cell == null)
-                data = null;
-            else if (cell.getCellType() == Cell.CELL_TYPE_STRING || cell.getCellType() == Cell.CELL_TYPE_BLANK)
-                data = cell.getStringCellValue();
-            else data = new Double(cell.getNumericCellValue()).toString();
-
-            if (cell1.getStringCellValue().equalsIgnoreCase("Assay Description") || cell1.getStringCellValue().equalsIgnoreCase("Assay_Description")) {
-                result.setAssayDescription(data);
-            }
-            if (cell1.getStringCellValue().equalsIgnoreCase("Edit Type")) {
-                result.setEditType(data);
-            }
-            if (cell1.getStringCellValue().equalsIgnoreCase("Biological/Transfection/Delivery Replicates") ||
-                    cell1.getStringCellValue().equalsIgnoreCase("Biological Replicates")) {
-
-                if (data != null && !data.equals("")) {
-
-                    if (data.startsWith("n=")) {
-                        data = data.substring(2).trim();
-                    }
-                    result.setNumberOfSamples(Double.valueOf(data).intValue());
-                }
-            }
-            if (cell1.getStringCellValue().equalsIgnoreCase("Units")) {
-                result.setUnits(data);
-            }
-            if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency") ||
-                    cell1.getStringCellValue().equalsIgnoreCase("Delivery Efficiency")) {
-                // todo: throw new Exception("add processing of sections 'Biomarker Detection’ and ‘Other Measurement’ in addition to 'Editing Efficency' and 'Delivery Efficiency'");
-
-                boolean noData = data == null ||
-                        data.equals("") ||
-                        data.equals("N/A") ||
-                        data.equalsIgnoreCase("Not provided") ||
-                        data.equalsIgnoreCase("Not determined");
-
-                if ( noData==false || this.loadExperimentRecordsWithNoDataSeries ) {
-
-                    // hack: data cleanup
-                    if( data.startsWith("n=") ) {
-                        data = data.substring(2).trim();
-                    }
-
-                    if (cell1.getStringCellValue().equalsIgnoreCase("Editing Efficiency"))
-                        result.setResultType("Editing Efficiency");
-                    else result.setResultType("Delivery Efficiency");
-
-                    boolean dataSeriesIsSignal = areDataSeriesSignal(data);
-                    if( dataSeriesIsSignal ) {
-                        result.setUnits("Signal");
-                    }
-
-                    long expRecId = loadExperimentRecord(experimentRecord, mergeExpRecs);
-                    result.setExperimentRecordId(expRecId);
-                    if( expRecId != 0 ) {
-                        loadExperimentRecordDetails(expRecId, expRecDetails);
-
-                        boolean detailsPresent = result.getNumberOfSamples()!=0
-                            || !Utils.isStringEmpty(result.getUnits())
-                            || !Utils.isStringEmpty(result.getAssayDescription())
-                            || !Utils.isStringEmpty(result.getEditType());
-
-                        if( detailsPresent ) {
-                            long resultId = dao.insertExperimentResult(result);
-                            if (resultId != 0) {
-                                loadDataSeries(data, resultId);
-                            }
-                        }
-                    }
-
-                    result = new ExperimentResultDetail();
-                }
-            }
-        }
-    }
-
-    public void loadDataInVivo(ExperimentRecord expRec, int column, Map<String,String> expRecDetails) throws Exception {
+    public void loadExperimentRecords(ExperimentRecord expRec, int column, Map<String,String> expRecDetails) throws Exception {
         boolean mergeExpRecs = true;
         FileInputStream fis = new FileInputStream(fileName);
         XSSFWorkbook wb = new XSSFWorkbook(fis);
@@ -624,6 +538,8 @@ public class Manager {
                 if (data != null &&
                         !data.equals("") &&
                         !data.equalsIgnoreCase("ND") &&
+                        !data.equalsIgnoreCase("N/A") &&
+                        !data.equalsIgnoreCase("Not applicable") &&
                         !data.equalsIgnoreCase("Not determined") &&
                         !data.equalsIgnoreCase("Not provided") &&
                         !data.equalsIgnoreCase("Not measured")) {
@@ -643,8 +559,23 @@ public class Manager {
                     result.setExperimentRecordId(expRecId);
                     loadExperimentRecordDetails(expRecId, expRecDetails);
 
-                    long resultId = dao.insertExperimentResult(result);
-                    loadDataSeries(data, resultId);
+                    // IT WAS:
+                    //long resultId = dao.insertExperimentResult(result);
+                    //loadDataSeries(data, resultId);
+
+
+                    // IT IS:
+                    boolean detailsPresent = result.getNumberOfSamples()!=0
+                            || !Utils.isStringEmpty(result.getUnits())
+                            || !Utils.isStringEmpty(result.getAssayDescription())
+                            || !Utils.isStringEmpty(result.getEditType());
+
+                    if( detailsPresent ) {
+                        long resultId = dao.insertExperimentResult(result);
+                        if (resultId != 0) {
+                            loadDataSeries(data, resultId);
+                        }
+                    }
                 }
             }
         }
@@ -661,7 +592,7 @@ public class Manager {
                 continue;
             }
 
-            if( val.equals("present") || val.equals("absent") || val.startsWith("inconclusive") ) {
+            if( val.equals("present") || val.equals("absent") || val.startsWith("inconclusive") || val.contains("blasts")) {
                 signalDataCount++;
             } else {
                 try {
