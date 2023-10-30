@@ -157,6 +157,7 @@ public class Mean {
 
                 double average = 0;
                 int noOfSamples = 0;
+                int valuesWithNrOfBlasts = 0;
 
                 for (ExperimentResultDetail result: list) {
 
@@ -177,6 +178,10 @@ public class Mean {
                             average += Double.valueOf(val2);
                             noOfSamples++;
                         }
+                    } else {
+                        if( result.getResult().contains("blasts") ) {
+                            valuesWithNrOfBlasts++;
+                        }
                     }
                 }
                 if( noOfSamples>0 ) {
@@ -186,6 +191,9 @@ public class Mean {
                 //   String averageStr = String.valueOf(average);
                 //2. String averageStr = String.format("%.2f", average);
                 String averageStr = roundToTwoPlaces(average);
+                if( average==0 && valuesWithNrOfBlasts>0 ) {
+                    averageStr = "# blasts analyzed";
+                }
 
                 if( resultDetail0.getReplicate()!=0 ) {
                     System.out.println("*** MEAN: unexpected");

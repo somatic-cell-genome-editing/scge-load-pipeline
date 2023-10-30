@@ -8,6 +8,7 @@ import edu.mcw.scge.Manager;
 // loaded on DEV on Jan 19, 2023
 // loaded on PROD on Jan 30, 2023
 // loaded on DEV/STAGE on Feb 13, 2023
+// loaded on DEV/STAGE on Sep 27, 2023
 
 public class Murray_GER19 {
 
@@ -16,11 +17,11 @@ public class Murray_GER19 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1080;
-        manager.fileName = "data/Murray_GER19-1080-2.xlsx";
+        manager.fileName = "data/Murray_GER19-1080-3.xlsx";
         manager.tier = 0;
 
         try {
-            manager.loadExperimentNumericData(18000000077L, "In Vitro - AL", 1);
+            manager.loadExperimentData(18000000077L, "In Vitro", 1, 5);
 
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());

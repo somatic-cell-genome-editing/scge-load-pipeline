@@ -545,10 +545,23 @@ public class Manager {
                         !data.equalsIgnoreCase("Not measured")) {
 
                     log.debug(studyId + " " + experimentId + " " + cell1);
-                    expRec.setTissueId(cell1.getStringCellValue());
-                    if (cell2 != null)
-                        expRec.setCellType(cell2.getStringCellValue());
-                    expRec.setOrganSystemID(cell0.getStringCellValue());
+
+                    String tissueId = cell1.getStringCellValue();
+                    if( tissueId.contains(":") ) {
+                        expRec.setTissueId(tissueId);
+                    }
+
+                    if (cell2 != null) {
+                        String cellTypeId = cell2.getStringCellValue();
+                        if( cellTypeId.contains(":") ) {
+                            expRec.setCellType(cellTypeId);
+                        }
+                    }
+
+                    String organSystemID = cell0.getStringCellValue();
+                    if( organSystemID!=null && organSystemID.contains(":") ) {
+                        expRec.setOrganSystemID(organSystemID);
+                    }
 
                     boolean dataSeriesIsSignal = areDataSeriesSignal(data);
                     if( dataSeriesIsSignal ) {
@@ -559,12 +572,6 @@ public class Manager {
                     result.setExperimentRecordId(expRecId);
                     loadExperimentRecordDetails(expRecId, expRecDetails);
 
-                    // IT WAS:
-                    //long resultId = dao.insertExperimentResult(result);
-                    //loadDataSeries(data, resultId);
-
-
-                    // IT IS:
                     boolean detailsPresent = result.getNumberOfSamples()!=0
                             || !Utils.isStringEmpty(result.getUnits())
                             || !Utils.isStringEmpty(result.getAssayDescription())
