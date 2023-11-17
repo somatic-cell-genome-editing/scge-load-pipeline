@@ -49,7 +49,7 @@ public class Manager {
     public String fileName = "0.xlsx";
     public String expType = "In Vivo";
     public int tier = 0;
-    public boolean loadExperimentRecordsWithNoDataSeries = false;
+    public boolean forceLoadExperimentRecordsAsSignal = false;
 
     Set<Long> vectors = new TreeSet<>();
     Set<Long> guides = new TreeSet<>();
@@ -535,52 +535,57 @@ public class Manager {
 
                 result.setResultType(expDataType);
 
-                if (data != null &&
-                        !data.equals("") &&
-                        !data.equalsIgnoreCase("ND") &&
-                        !data.equalsIgnoreCase("N/A") &&
-                        !data.equalsIgnoreCase("Not applicable") &&
-                        !data.equalsIgnoreCase("Not determined") &&
-                        !data.equalsIgnoreCase("Not provided") &&
-                        !data.equalsIgnoreCase("Not measured")) {
+                if( data != null && !data.equals("") ) {
 
-                    log.debug(studyId + " " + experimentId + " " + cell1);
+                    boolean validDataSeries = data != null &&
+                            !data.equals("") &&
+                            !data.equalsIgnoreCase("ND") &&
+                            !data.equalsIgnoreCase("N/A") &&
+                            !data.equalsIgnoreCase("Not applicable") &&
+                            !data.equalsIgnoreCase("Not determined") &&
+                            !data.equalsIgnoreCase("Not provided") &&
+                            !data.equalsIgnoreCase("Not measured");
 
-                    String tissueId = cell1.getStringCellValue();
-                    if( tissueId.contains(":") ) {
-                        expRec.setTissueId(tissueId);
-                    }
+                    if (validDataSeries || forceLoadExperimentRecordsAsSignal) {
 
-                    if (cell2 != null) {
-                        String cellTypeId = cell2.getStringCellValue();
-                        if( cellTypeId.contains(":") ) {
-                            expRec.setCellType(cellTypeId);
+                        log.debug(studyId + " " + experimentId + " " + cell1);
+
+                        String tissueId = cell1.getStringCellValue();
+                        if (tissueId.contains(":")) {
+                            expRec.setTissueId(tissueId);
                         }
-                    }
 
-                    String organSystemID = cell0.getStringCellValue();
-                    if( organSystemID!=null && organSystemID.contains(":") ) {
-                        expRec.setOrganSystemID(organSystemID);
-                    }
+                        if (cell2 != null) {
+                            String cellTypeId = cell2.getStringCellValue();
+                            if (cellTypeId.contains(":")) {
+                                expRec.setCellType(cellTypeId);
+                            }
+                        }
 
-                    boolean dataSeriesIsSignal = areDataSeriesSignal(data);
-                    if( dataSeriesIsSignal ) {
-                        result.setUnits("Signal");
-                    }
+                        String organSystemID = cell0.getStringCellValue();
+                        if (organSystemID != null && organSystemID.contains(":")) {
+                            expRec.setOrganSystemID(organSystemID);
+                        }
 
-                    long expRecId = loadExperimentRecord(expRec, mergeExpRecs);
-                    result.setExperimentRecordId(expRecId);
-                    loadExperimentRecordDetails(expRecId, expRecDetails);
+                        boolean dataSeriesIsSignal = areDataSeriesSignal(data);
+                        if (dataSeriesIsSignal) {
+                            result.setUnits("Signal");
+                        }
 
-                    boolean detailsPresent = result.getNumberOfSamples()!=0
-                            || !Utils.isStringEmpty(result.getUnits())
-                            || !Utils.isStringEmpty(result.getAssayDescription())
-                            || !Utils.isStringEmpty(result.getEditType());
+                        long expRecId = loadExperimentRecord(expRec, mergeExpRecs);
+                        result.setExperimentRecordId(expRecId);
+                        loadExperimentRecordDetails(expRecId, expRecDetails);
 
-                    if( detailsPresent ) {
-                        long resultId = dao.insertExperimentResult(result);
-                        if (resultId != 0) {
-                            loadDataSeries(data, resultId);
+                        boolean detailsPresent = result.getNumberOfSamples() != 0
+                                || !Utils.isStringEmpty(result.getUnits())
+                                || !Utils.isStringEmpty(result.getAssayDescription())
+                                || !Utils.isStringEmpty(result.getEditType());
+
+                        if (detailsPresent) {
+                            long resultId = dao.insertExperimentResult(result);
+                            if (resultId != 0) {
+                                loadDataSeries(data, resultId);
+                            }
                         }
                     }
                 }
@@ -589,6 +594,11 @@ public class Manager {
     }
 
     boolean areDataSeriesSignal(String data) {
+
+        if( forceLoadExperimentRecordsAsSignal ) {
+            return true;
+        }
+
         int signalDataCount = 0;
         int numericDataCount = 0;
         String valueString = data;

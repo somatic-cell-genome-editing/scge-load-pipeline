@@ -285,14 +285,18 @@ public class Mean {
                 int anyCount = 0;
                 int presentCount = 0;
                 int notReportedCount = 0;
+                int notProvidedCount = 0;
 
                 for (ExperimentResultDetail result : experimentResults) {
                     if( result.getReplicate()!=0 ) {
-                        if( result.getResult().equals("present") ) {
+                        if( result.getResult().equalsIgnoreCase("present") ) {
                             presentCount++;
                         }
-                        if( result.getResult().equals("not reported") ) {
+                        if( result.getResult().equalsIgnoreCase("not reported") ) {
                             notReportedCount++;
+                        }
+                        if( result.getResult().equalsIgnoreCase("not provided") ) {
+                            notProvidedCount++;
                         }
                         anyCount++;
                     }
@@ -303,6 +307,8 @@ public class Mean {
                 resultMean.setResultId(resultId);
                 if( notReportedCount==anyCount ) {
                     resultMean.setResult("not reported");
+                } else if( notProvidedCount==anyCount ) {
+                    resultMean.setResult("not provided");
                 } else {
                     resultMean.setResult(presentCount + " of " + anyCount + " present");
                 }

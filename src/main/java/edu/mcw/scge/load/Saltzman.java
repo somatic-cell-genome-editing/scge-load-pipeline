@@ -18,7 +18,6 @@ public class Saltzman {
 
         try {
 
-            manager.loadExperimentRecordsWithNoDataSeries = false;
             manager.loadExperimentNumericData(18000000058L, "In Vivo", 26);
 
         } catch (Exception e) {

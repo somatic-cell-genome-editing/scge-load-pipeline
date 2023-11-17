@@ -28,7 +28,7 @@ dependencies {
     implementation 'org.apache.poi:poi:3.17'
     implementation 'org.apache.poi:poi-ooxml:3.17'
     implementation 'org.apache.poi:poi-ooxml-schemas:3.17'
-    implementation 'org.postgresql:postgresql:9.2-1004-jdbc4'
+    implementation 'org.postgresql:postgresql:9.3-1104-jdbc4'
     implementation 'org.springframework:spring-beans:5.3.0'
     implementation 'org.springframework:spring-jdbc:5.3.0'
     implementation 'org.apache.xmlbeans:xmlbeans:3.1.0'
@@ -37,7 +37,6 @@ dependencies {
 }
 
 jar {
-    baseName = myAppName
     manifest {
         attributes(
             'Built-By': System.getProperty('user.name'),
@@ -51,7 +50,7 @@ jar {
 
 distributions {
     main {
-        baseName = myAppName
+        distributionBaseName = myAppName
     }
 }
 

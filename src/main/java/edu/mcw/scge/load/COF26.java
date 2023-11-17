@@ -19,7 +19,6 @@ public class COF26 {
 
         try {
 
-            manager.loadExperimentRecordsWithNoDataSeries = false;
             manager.loadExperimentNumericData(18000000086L, "In Vitro", 3);
 
         } catch (Exception e) {
