@@ -259,7 +259,7 @@ public class Manager {
                     // validate parental origin
                     Model cellModelInRgd = dao.getModel(model.getModelId());
                     if( cellModelInRgd!=null ) {
-                        if( Utils.isStringEmpty(cellModelInRgd.getParentalOrigin()) || cellModelInRgd.getParentalOrigin().equals("0") ) {
+                        if( Utils.isStringEmpty(cellModelInRgd.getParentalOrigin()) ) {
                             dao.setParentalOriginForModel(cellModelId, metadataForCellModel.get("Parental Origin"));
                         } else {
                             if( !metadataForCellModel.get("Parental Origin").equals(cellModelInRgd.getParentalOrigin()) ) {
@@ -602,6 +602,10 @@ public class Manager {
             if( val.equals("present") || val.equals("absent") || val.startsWith("inconclusive") || val.contains("blasts")) {
                 signalDataCount++;
             } else {
+                // strip trailing '%' if any
+                if( val.endsWith("%") ) {
+                    val = val.substring(0, val.length()-1).trim();
+                }
                 try {
                     Double.parseDouble(val);
                     numericDataCount++;
@@ -619,6 +623,10 @@ public class Manager {
             String val = values[i].trim().toLowerCase();
             if( val.isEmpty() || val.equals("n/a") ) {
                 continue;
+            }
+            // strip trailing '%' if any
+            if( val.endsWith("%") ) {
+                val = val.substring(0, val.length()-1).trim();
             }
 
             ExperimentResultDetail detail = new ExperimentResultDetail();
@@ -687,7 +695,7 @@ public class Manager {
         guide.setGuide(metadata.get("Lab gRNA Name/ID"));
 
         String targetLocus = metadata.get("Target Locus");
-        if( Utils.isStringEmpty(targetLocus) ) {
+        if( Utils.isStringEmpty(targetLocus) || targetLocus.equalsIgnoreCase("N/A") ) {
             guide.setTargetLocus(null);
         } else {
             //html-encode '<' characters to avoid problems with display in a browser
@@ -1118,6 +1126,9 @@ public class Manager {
 
         model.setRrid(metadata.get("RRID link"));
         model.setOfficialName(metadata.get("Official Name"));
+
+        // if 'display name' not provided, use 'name' as 'display name'
+        model.setDisplayName( Utils.NVL( metadata.get("Display Name"), model.getName()) );
 
         return loadModelInDb(model, "Organoid");
     }

@@ -121,6 +121,10 @@ public class LoadDAO extends AbstractDAO {
     }
 
     public long insertModel(Model model) throws Exception {
+
+        if( model.getParentalOrigin()!=null && model.getParentalOrigin().equals("0") ) {
+            model.setParentalOrigin("");
+        }
         return modelDao.insertModel(model);
     }
 
@@ -133,6 +137,9 @@ public class LoadDAO extends AbstractDAO {
     }
 
     public void setParentalOriginForModel( long modelId, String parentalOrigin ) throws Exception {
+        if( parentalOrigin!=null && parentalOrigin.equals("0") ) {
+            parentalOrigin = "";
+        }
         String sql = "UPDATE model SET parental_origin=? WHERE model_id=?";
         modelDao.update(sql, parentalOrigin, modelId);
     }
@@ -436,6 +443,9 @@ public class LoadDAO extends AbstractDAO {
         if( modelInDb==null ) {
             return false;
         }
+        if( model.getParentalOrigin()!=null && model.getParentalOrigin().equals("0") ) {
+            model.setParentalOrigin("");
+        }
 
         boolean isMatching =
                 Utils.stringsAreEqual(model.getType(), modelInDb.getType())
@@ -472,31 +482,6 @@ public class LoadDAO extends AbstractDAO {
         return false; // match -- nothing to do
     }
 
-    public void updateDelivery(long oldId,long newId) throws Exception{
-        String sql = "update delivery_system set ds_id = ? where ds_id = ?";
-
-        update(sql,newId,oldId);
-        sql = "update experiment_record set ds_id = ? where ds_id = ?";
-
-        update(sql,newId,oldId);
-    }
-
-    public void updateExperimentRecord(long oldId,long newId) throws Exception{
-        String sql = "update experiment_record set experiment_record_id = ? where experiment_record_id = ?";
-
-        update(sql,newId,oldId);
-        sql = "update experiment_result set experiment_record_id = ? where experiment_record_id = ?";
-
-        update(sql,newId,oldId);
-
-       /* String sql = "update guide_associations set experiment_record_id = ? where experiment_record_id = ?";
-
-        update(sql,newId,oldId);
-        sql = "update vector_associations set experiment_record_id = ? where experiment_record_id = ?";
-
-        update(sql,newId,oldId);
-        */
-    }
 
     public void updateExperimentName(long expId, String newName) throws Exception {
         String sql = "UPDATE experiment SET name=? WHERE experiment_id=?";
