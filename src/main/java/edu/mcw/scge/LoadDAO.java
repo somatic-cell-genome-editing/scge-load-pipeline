@@ -53,7 +53,7 @@ public class LoadDAO extends AbstractDAO {
 
         boolean isMatching =
             Utils.stringsAreEqual(ed.getType(), edInDb.getType())
-                && Utils.stringsAreEqual(ed.getSubType(), edInDb.getSubType())
+                && Utils.stringsAreEqual(ed.getSubtype(), edInDb.getSubtype())
                 && Utils.stringsAreEqual(ed.getSymbol(), edInDb.getSymbol())
                 && Utils.stringsAreEqual(ed.getAlias(), edInDb.getAlias())
                 && Utils.stringsAreEqual(ed.getSpecies(), edInDb.getSpecies())

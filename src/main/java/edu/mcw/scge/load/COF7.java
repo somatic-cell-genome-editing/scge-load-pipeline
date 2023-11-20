@@ -4,6 +4,7 @@ import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.Manager;
 
 // loaded on DEV on Nov 17, 2023
+// reloaded on DEV on Nov 20, 2023
 
 
 public class COF7 {
@@ -13,7 +14,7 @@ public class COF7 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1074;
-        manager.fileName = "data/COF7-1074-1.xlsx";
+        manager.fileName = "data/COF7-1074-2.xlsx";
         manager.tier = 0;
 
         try {

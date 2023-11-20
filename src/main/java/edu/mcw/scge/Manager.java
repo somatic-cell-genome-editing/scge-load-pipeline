@@ -477,6 +477,8 @@ public class Manager {
             Cell cell0 = row.getCell(0);
             Cell cell1 = row.getCell(1);
             Cell cell2 = row.getCell(2);
+            Cell cell3 = row.getCell(3);
+            Cell cell4 = row.getCell(4);
             Cell cell = row.getCell(column);
 
             if (row.getRowNum() < 3 || cell1 == null)
@@ -537,8 +539,7 @@ public class Manager {
 
                 if( data != null && !data.equals("") ) {
 
-                    boolean validDataSeries = data != null &&
-                            !data.equals("") &&
+                    boolean validDataSeries =
                             !data.equalsIgnoreCase("ND") &&
                             !data.equalsIgnoreCase("N/A") &&
                             !data.equalsIgnoreCase("Not applicable") &&
@@ -565,6 +566,16 @@ public class Manager {
                         String organSystemID = cell0.getStringCellValue();
                         if (organSystemID != null && organSystemID.contains(":")) {
                             expRec.setOrganSystemID(organSystemID);
+                        }
+
+                        String qualifier = cell3.getStringCellValue();
+                        if (qualifier != null && qualifier.length()>0 ) {
+                            expRec.setQualifier(qualifier);
+                        }
+
+                        String timePoint = cell4.getStringCellValue();
+                        if (timePoint != null && timePoint.length()>0 ) {
+                            expRec.setTimePoint(timePoint);
                         }
 
                         boolean dataSeriesIsSignal = areDataSeriesSignal(data);
@@ -631,7 +642,7 @@ public class Manager {
         String[] values = valueString.split(",");
         for (int i = 0; i < values.length; i++) {
             String val = values[i].trim().toLowerCase();
-            if( val.isEmpty() || val.equals("n/a") ) {
+            if( val.isEmpty() || val.equals("n/a") || val.equals("qns") ) {
                 continue;
             }
             // strip trailing '%' if any
@@ -792,7 +803,7 @@ public class Manager {
         //editor.setSymbol(metadata.get("Catalog#"));
         editor.setSpecies(metadata.get("Editor Species"));
         editor.setType(metadata.get("Editor Type"));
-        editor.setSubType(metadata.get("Editor Subtype"));
+        editor.setSubtype(metadata.get("Editor Subtype"));
         editor.setSymbol(metadata.get("Editor Name"));
         editor.setEditorDescription(metadata.get("Editor Description"));
         editor.setAnnotatedMap(metadata.get("Annotated Map"));
