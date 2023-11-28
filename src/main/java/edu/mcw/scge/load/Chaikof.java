@@ -4,6 +4,7 @@ import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.Manager;
 
 // loaded on DEV on Nov 20, 2023
+// reloaded on DEV on Nov 21, 2023
 
 public class Chaikof {
 
@@ -12,7 +13,7 @@ public class Chaikof {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1091;
-        manager.fileName = "data/Chaikof-1091-1.xlsx";
+        manager.fileName = "data/Chaikof-1091-2.xlsx";
         manager.tier = 0;
 
         try {

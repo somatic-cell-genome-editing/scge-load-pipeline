@@ -551,11 +551,13 @@ public class Manager {
 
                         log.debug(studyId + " " + experimentId + " " + cell1);
 
+                        expRec.setTissueId("");
                         String tissueId = cell1.getStringCellValue();
                         if (tissueId.contains(":")) {
                             expRec.setTissueId(tissueId);
                         }
 
+                        expRec.setCellType("");
                         if (cell2 != null) {
                             String cellTypeId = cell2.getStringCellValue();
                             if (cellTypeId.contains(":")) {
@@ -563,16 +565,19 @@ public class Manager {
                             }
                         }
 
+                        expRec.setOrganSystemID("");
                         String organSystemID = cell0.getStringCellValue();
                         if (organSystemID != null && organSystemID.contains(":")) {
                             expRec.setOrganSystemID(organSystemID);
                         }
 
+                        expRec.setQualifier("");
                         String qualifier = cell3.getStringCellValue();
                         if (qualifier != null && qualifier.length()>0 ) {
                             expRec.setQualifier(qualifier);
                         }
 
+                        expRec.setTimePoint("");
                         String timePoint = cell4.getStringCellValue();
                         if (timePoint != null && timePoint.length()>0 ) {
                             expRec.setTimePoint(timePoint);
