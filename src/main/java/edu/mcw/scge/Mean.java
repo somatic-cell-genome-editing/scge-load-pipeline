@@ -26,20 +26,12 @@ public class Mean {
 
             List<ExperimentResultDetail> experimentResults = manager.getDao().getExperimentalResults(record.getExperimentRecordId());
 
-            int noOfSamples = 0;
-            int signalSamples = 0;
+            boolean dataSeriesIsNumeric = isDataSeriesNumeric(experimentResults);
 
-            for (ExperimentResultDetail result : experimentResults) {
-                noOfSamples++;
-                if (result.getUnits().equalsIgnoreCase("signal")) {
-                    signalSamples++;
-                }
-            }
-
-            if (noOfSamples == signalSamples) {
-                signalRecords.add(record);
-            } else {
+            if ( dataSeriesIsNumeric ) {
                 numericRecords.add(record);
+            } else {
+                signalRecords.add(record);
             }
         }
 
@@ -54,6 +46,19 @@ public class Mean {
             loadSignalMean(signalRecords, manager);
             manager.debug("   signal mean ok");
         }
+    }
+
+    static boolean isDataSeriesNumeric( List<ExperimentResultDetail> experimentResults ) {
+
+        for( ExperimentResultDetail detail: experimentResults ) {
+
+            try {
+                Double.parseDouble(detail.getResult());
+            } catch( NumberFormatException e) {
+                return false;
+            }
+        }
+        return true;
     }
 
     static public void loadMean(long expId, Manager manager, boolean skipSignalData) throws Exception {
@@ -283,21 +288,44 @@ public class Mean {
                 experimentResults = resultIdMap.get(resultId);
 
                 int anyCount = 0;
+                int numericCount = 0;
+
                 int presentCount = 0;
+                int absentCount = 0;
                 int notReportedCount = 0;
                 int notProvidedCount = 0;
+                Map<String, Integer> hitCountMap = new HashMap<>();
 
                 for (ExperimentResultDetail result : experimentResults) {
                     if( result.getReplicate()!=0 ) {
                         if( result.getResult().equalsIgnoreCase("present") ) {
                             presentCount++;
                         }
-                        if( result.getResult().equalsIgnoreCase("not reported") ) {
+                        else if( result.getResult().equalsIgnoreCase("absent") ) {
+                            absentCount++;
+                        }
+                        else if( result.getResult().equalsIgnoreCase("not reported") ) {
                             notReportedCount++;
                         }
-                        if( result.getResult().equalsIgnoreCase("not provided") ) {
+                        else if( result.getResult().equalsIgnoreCase("not provided") ) {
                             notProvidedCount++;
                         }
+                        else {
+                            Integer hitCount = hitCountMap.get( result.getResult() );
+                            if( hitCount==null ) {
+                                hitCount = 1;
+                            } else {
+                                hitCount++;
+                            }
+                            hitCountMap.put( result.getResult(), hitCount );
+
+                            try {
+                                Double.parseDouble(result.getResult());
+                                numericCount++;
+                            } catch( NumberFormatException e) {
+                            }
+                        }
+
                         anyCount++;
                     }
                 }
@@ -309,8 +337,32 @@ public class Mean {
                     resultMean.setResult("not reported");
                 } else if( notProvidedCount==anyCount ) {
                     resultMean.setResult("not provided");
-                } else {
+                } else if( presentCount>0 || absentCount>0 ) {
                     resultMean.setResult(presentCount + " of " + anyCount + " present");
+                } else {
+
+                    String meanStr = "";
+
+                    if( numericCount == anyCount ) {
+                        // all data is numeric
+                        double sum = 0.0;
+                        int n = 0;
+                        for (ExperimentResultDetail result : experimentResults) {
+                            if (result.getReplicate() != 0) {
+                                n++;
+                                sum += Double.parseDouble(result.getResult());
+                            }
+                        }
+                        meanStr = roundToTwoPlaces(sum/n);
+                    } else {
+                        for (Map.Entry<String, Integer> entry : hitCountMap.entrySet()) {
+                            if (!meanStr.isEmpty()) {
+                                meanStr += ", ";
+                            }
+                            meanStr += entry.getKey() + " (" + entry.getValue() + " out of " + anyCount + ")";
+                        }
+                    }
+                    resultMean.setResult(meanStr);
                 }
 
                 dao.insertExperimentResultDetail(resultMean);

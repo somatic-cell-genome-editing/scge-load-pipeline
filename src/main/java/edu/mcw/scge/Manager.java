@@ -585,7 +585,7 @@ public class Manager {
 
                         boolean dataSeriesIsSignal = areDataSeriesSignal(data);
                         if (dataSeriesIsSignal) {
-                            result.setUnits("Signal");
+                            //result.setUnits("Signal");
                         }
 
                         long expRecId = loadExperimentRecord(expRec, mergeExpRecs);
@@ -625,29 +625,28 @@ public class Manager {
                 continue;
             }
 
-            if( val.equals("present") || val.equals("absent") || val.startsWith("inconclusive") || val.contains("blasts")) {
+            // strip trailing '%' if any
+            if( val.endsWith("%") ) {
+                val = val.substring(0, val.length()-1).trim();
+            }
+
+            try {
+                Double.parseDouble(val);
+                numericDataCount++;
+            } catch( NumberFormatException e) {
                 signalDataCount++;
-            } else {
-                // strip trailing '%' if any
-                if( val.endsWith("%") ) {
-                    val = val.substring(0, val.length()-1).trim();
-                }
-                try {
-                    Double.parseDouble(val);
-                    numericDataCount++;
-                } catch( NumberFormatException e) {}
             }
         }
 
-        return signalDataCount>0 && numericDataCount==0;
+        return signalDataCount>0;
     }
 
     void loadDataSeries(String data, long resultId) throws Exception {
         String valueString = data;
         String[] values = valueString.split(",");
         for (int i = 0; i < values.length; i++) {
-            String val = values[i].trim().toLowerCase();
-            if( val.isEmpty() || val.equals("n/a") || val.equals("qns") ) {
+            String val = values[i].trim();
+            if( val.isEmpty() || val.equalsIgnoreCase("n/a") || val.equalsIgnoreCase("qns") ) {
                 continue;
             }
             // strip trailing '%' if any
