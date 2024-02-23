@@ -7,6 +7,7 @@ import edu.mcw.scge.Manager;
 // loaded on DEV on Dec 13, 2022
 // loaded on DEV on Jan 19, 2023
 // loaded on PROD on Jan 30, 2023
+// loaded on DEV on Feb 22, 2024
 
 public class Murray_GER14 {
 
@@ -15,11 +16,11 @@ public class Murray_GER14 {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1078;
-        manager.fileName = "data/Murray_GER14-1078-3.xlsx";
+        manager.fileName = "data/Murray_GER14-1078-4.xlsx";
         manager.tier = 0;
 
         try {
-            manager.loadExperimentNumericData(18000000075L, "In Vitro", 4);
+            manager.loadExperimentData(18000000075L, "In Vitro", 4, 5);
 
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());
