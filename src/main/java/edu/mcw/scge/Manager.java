@@ -50,6 +50,7 @@ public class Manager {
     public String expType = "In Vivo";
     public int tier = 0;
     public boolean forceLoadExperimentRecordsAsSignal = false;
+    boolean oldFormat = false; // in old format, columns 'Condition' and 'Qualifier' are not available
 
     Set<Long> vectors = new TreeSet<>();
     Set<Long> guides = new TreeSet<>();
@@ -572,15 +573,17 @@ public class Manager {
                         }
 
                         expRec.setQualifier("");
-                        String qualifier = cell3.getStringCellValue();
-                        if (qualifier != null && qualifier.length()>0 ) {
-                            expRec.setQualifier(qualifier);
-                        }
-
                         expRec.setTimePoint("");
-                        String timePoint = cell4.getStringCellValue();
-                        if (timePoint != null && timePoint.length()>0 ) {
-                            expRec.setTimePoint(timePoint);
+                        if( oldFormat==false ) {
+                            String qualifier = cell3.getStringCellValue();
+                            if (qualifier != null && qualifier.length() > 0) {
+                                expRec.setQualifier(qualifier);
+                            }
+
+                            String timePoint = cell4.getStringCellValue();
+                            if (timePoint != null && timePoint.length() > 0) {
+                                expRec.setTimePoint(timePoint);
+                            }
                         }
 
                         boolean dataSeriesIsSignal = areDataSeriesSignal(data);
@@ -1414,6 +1417,13 @@ public class Manager {
         }
 
         // columns of numeric data
+        if( firstDataColNr == 3 ) {
+            oldFormat = true;
+        } else if( firstDataColNr== 5 ) {
+            oldFormat = false;
+        } else {
+            throw new Exception("Unexpected first data col nr");
+        }
         for (int column = firstDataColNr; column < firstDataColNr + dataCols; column++) { // 0-based column in the excel sheet
             String name = "Condition 1"; //exp record name to be loaded, if not present
             loadMetaData(column, name);

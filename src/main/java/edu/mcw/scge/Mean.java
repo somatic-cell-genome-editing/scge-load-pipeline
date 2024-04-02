@@ -294,10 +294,16 @@ public class Mean {
                 int absentCount = 0;
                 int notReportedCount = 0;
                 int notProvidedCount = 0;
+                int blastsCount = 0;
+
                 Map<String, Integer> hitCountMap = new HashMap<>();
 
                 for (ExperimentResultDetail result : experimentResults) {
                     if( result.getReplicate()!=0 ) {
+                        if( result.getResult().contains("blasts") ) {
+                            blastsCount++;
+                        }
+
                         if( result.getResult().equalsIgnoreCase("present") ) {
                             presentCount++;
                         }
@@ -359,7 +365,12 @@ public class Mean {
                             if (!meanStr.isEmpty()) {
                                 meanStr += ", ";
                             }
-                            meanStr += entry.getKey() + " (" + entry.getValue() + " out of " + anyCount + ")";
+
+                            if( blastsCount==anyCount ) {
+                                meanStr += "# blasts analyzed";
+                            } else {
+                                meanStr += entry.getKey() + " (" + entry.getValue() + " out of " + anyCount + ")";
+                            }
                         }
                     }
                     resultMean.setResult(meanStr);

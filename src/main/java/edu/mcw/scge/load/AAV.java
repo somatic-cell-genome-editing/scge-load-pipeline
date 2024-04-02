@@ -15,7 +15,7 @@ public class AAV {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1093;
-        manager.fileName = "data/AAV-1093-6.xlsx";
+        manager.fileName = "data/AAV-1093-7.xlsx";
         manager.tier = 0;
 
         try {
