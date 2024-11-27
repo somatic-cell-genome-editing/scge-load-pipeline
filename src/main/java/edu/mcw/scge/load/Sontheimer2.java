@@ -3,23 +3,21 @@ package edu.mcw.scge.load;
 import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.Manager;
 
-// study loaded on Nov 21, 2022
-// reloaded on Apr 21, 2023
-// reloaded on May 07, 2024
+// loaded on Aug 14, 2024
 
-public class Sontheimer {
+public class Sontheimer2 {
 
     public static void main(String[] args) {
 
         Manager manager = Manager.getManagerInstance();
 
-        manager.studyId = 1048;
-        manager.fileName = "data/Sontheimer-1048-3.xlsx";
+        manager.studyId = 1084;
+        manager.fileName = "data/Sontheimer2-1084-1.xlsx";
         manager.tier = 0;
 
         try {
 
-            manager.loadExperimentData(18000000068L, "In Vivo", 4, 5);
+            manager.loadExperimentData(18000000118L, "In Vivo", 4, 5);
 
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());

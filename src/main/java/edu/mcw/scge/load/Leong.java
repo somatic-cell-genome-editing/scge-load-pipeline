@@ -10,6 +10,7 @@ import edu.mcw.scge.Mean;
 // study loaded on DEV/PROD on Dec 20, 2022
 // study loaded on DEV/PROD on Jan 16, 2023
 // reloaded on DEV/STAGE Mar 01, 2023
+// loaded on DEV/STAGE May 07, 2024
 
 public class Leong {
 
@@ -18,11 +19,11 @@ public class Leong {
         Manager manager = Manager.getManagerInstance();
 
         manager.studyId = 1064;
-        manager.fileName = "data/Leong-1064-6.xlsx";
+        manager.fileName = "data/Leong-1064-7.xlsx";
         manager.tier = 0;
 
         try {
-            manager.loadExperimentNumericData(18000000059L, "In Vivo", 4);
+            manager.loadExperimentData(18000000059L, "In Vivo", 6, 5);
 
         } catch (Exception e) {
             Utils.printStackTrace(e, manager.getLog());

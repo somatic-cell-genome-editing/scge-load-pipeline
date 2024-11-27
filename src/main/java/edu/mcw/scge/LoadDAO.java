@@ -1,6 +1,7 @@
 package edu.mcw.scge;
 
 import edu.mcw.scge.dao.spring.IntListQuery;
+import edu.mcw.scge.dao.spring.LongListQuery;
 import edu.mcw.scge.dao.spring.StringListQuery;
 import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.dao.*;
@@ -514,7 +515,7 @@ public class LoadDAO extends AbstractDAO {
         }
 
         String sql = "select scge_id from images where scge_id in(select experiment_record_id from experiment_record where experiment_id = ?)";
-        List<Integer> imageIds = IntListQuery.execute(expDao, sql, expId);
+        List<Long> imageIds = LongListQuery.execute(expDao, sql, expId);
         if( !imageIds.isEmpty() ) {
             throw new Exception("### LOAD ABORTED! there are "+imageIds.size()+" for experiment_id = "+expId);
         }
