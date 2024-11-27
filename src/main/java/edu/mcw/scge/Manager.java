@@ -554,8 +554,15 @@ public class Manager {
 
                         expRec.setTissueId("");
                         String tissueId = cell1.getStringCellValue();
-                        if (tissueId.contains(":")) {
-                            expRec.setTissueId(tissueId);
+                        if( tissueId!=null ) {
+                            if (tissueId.contains(":")) {
+                                expRec.setTissueId(tissueId);
+                            } else {
+                                String tissueIdLC = tissueId.toLowerCase();
+                                if( tissueIdLC.equals("retina") ) {
+                                    expRec.setTissueId("UBERON:0000966");
+                                }
+                            }
                         }
 
                         expRec.setCellType("");
@@ -568,8 +575,15 @@ public class Manager {
 
                         expRec.setOrganSystemID("");
                         String organSystemID = cell0.getStringCellValue();
-                        if (organSystemID != null && organSystemID.contains(":")) {
-                            expRec.setOrganSystemID(organSystemID);
+                        if (organSystemID != null ) {
+                            if( organSystemID.contains(":") ) {
+                                expRec.setOrganSystemID(organSystemID);
+                            } else {
+                                String organIdLC = organSystemID.toLowerCase();
+                                if( organIdLC.equals("eye") ) {
+                                    expRec.setOrganSystemID("UBERON:0000970");
+                                }
+                            }
                         }
 
                         expRec.setQualifier("");
