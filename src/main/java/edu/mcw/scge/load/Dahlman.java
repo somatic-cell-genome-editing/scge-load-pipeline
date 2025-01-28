@@ -4,6 +4,7 @@ import edu.mcw.rgd.process.Utils;
 import edu.mcw.scge.Manager;
 
 // loaded on DEV on Apr 03, 2024
+// renamed study SCGE_ID from 1092 to 1058, on Jan 28, 2025
 
 public class Dahlman {
 
@@ -11,7 +12,7 @@ public class Dahlman {
 
         Manager manager = Manager.getManagerInstance();
 
-        manager.studyId = 1092;
+        manager.studyId = 1058;
         manager.fileName = "data/Dahlman-1092-1.xlsx";
         manager.tier = 0;
 

@@ -1,3 +1,6 @@
+Jan 28, 2025
+  Dahlman study: renamed scge id from 1092 to 1058
+
 Dec 13, 2022
   5 Murray studies reloaded: added a way to load cell model associated with animal model
 
