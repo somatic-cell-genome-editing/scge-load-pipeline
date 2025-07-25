@@ -1177,7 +1177,13 @@ public class Manager {
 
     private long loadModelInDb(Model model, String modelType) throws Exception {
         model.setType(modelType);
-        if (model.getName() == null || model.getName().equals("")) {
+
+        if( Utils.isStringEmpty(model.getName()) ) {
+            if( !Utils.isStringEmpty(model.getDisplayName()) ) {
+                model.setName(model.getDisplayName());
+            }
+        }
+        if( Utils.isStringEmpty(model.getName()) ) {
             return 0;
         }
 
