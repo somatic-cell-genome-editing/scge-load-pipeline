@@ -199,16 +199,23 @@ public class LoadDAO extends AbstractDAO {
         return expRecordDao.insertExperimentRecord(experiment);
     }
 
-    public long getExpRecId(ExperimentRecord experiment) throws Exception {
-        return expRecordDao.getExpRecordId(experiment);
-    }
+    public long getExpRecId(ExperimentRecord r) throws Exception {
+        //return expRecordDao.getExpRecordId(r);
 
-    public Person getPersonByEmail(String email) throws Exception{
-     return personDao.getPersonByEmail(email).get(0);
-    }
-
-    public void insertStudy(Study s) throws Exception{
-        studyDao.insertStudy(s);
+        String sql = """
+            SELECT MAX(experiment_record_id) FROM experiment_record 
+            WHERE name=? AND study_id=? AND editor_id=? AND ds_id=? AND model_id=? 
+            AND application_method_id=? AND experiment_id=?
+            AND COALESCE(sex,'') = COALESCE(?,'') 
+            AND COALESCE(tissue_id,'') = COALESCE(?,'') 
+            AND COALESCE(cell_type,'') = COALESCE(?,'') 
+            AND COALESCE(organ_system,'') = COALESCE(?,'') 
+            AND COALESCE(qualifier,'') = COALESCE(?,'') 
+            AND COALESCE(time_point,'') = COALESCE(?,'')
+            """;
+        return expRecordDao.getLongCount(sql, r.getExperimentName(), r.getStudyId(), r.getEditorId(), r.getDeliverySystemId(), r.getModelId(),
+                r.getApplicationMethodId(), r.getExperimentId(),
+                r.getSex(), r.getTissueId(), r.getCellType(), r.getOrganSystemID(), r.getQualifier(), r.getTimePoint());
     }
 
     public int getMethodId(ApplicationMethod method) throws Exception {
