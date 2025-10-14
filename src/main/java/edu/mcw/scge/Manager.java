@@ -668,7 +668,7 @@ public class Manager {
             }
             // strip trailing '%' if any
             if( val.endsWith("%") ) {
-                val = val.substring(0, val.length()-1).trim();
+                //val = val.substring(0, val.length()-1).trim();
             }
 
             ExperimentResultDetail detail = new ExperimentResultDetail();
